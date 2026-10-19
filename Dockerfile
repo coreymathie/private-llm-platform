@@ -3,7 +3,7 @@
 # Includes demo/ (the console, served at /console) and scripts/ (mock backend, ML-BOM).
 # Not built in the repository's CI; build and push it to your own registry:
 #   docker build -t registry.example.internal/local-llm-gateway:0.7.0 .
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /app
