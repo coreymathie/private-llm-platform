@@ -4,8 +4,9 @@
 
 This release reframes the console around the institution that would deploy the platform. The console is set in
 a fictional credit union and opens on an employee assistant, in the pattern of an internal Copilot-style tool,
-with a 59-document library behind it. Evidence: 253 tests, an answer-quality eval over the sample library itself
-(59 questions asked as five personas, no ACL leaks, hybrid citation accuracy 0.920), and a 46-check browser
+with a 59-document library behind it. Evidence: 256 tests, an answer-quality eval over the sample library itself
+(59 gated questions plus 237 held out, asked as five personas, no ACL leaks; hybrid citation accuracy 0.920 on the
+gated set and 0.698 on all 296), and a 47-check browser
 smoke test across both console modes.
 
 ### Highlights
@@ -130,6 +131,23 @@ smoke test across both console modes.
   is reported. Published results changed to the new measurement (hybrid: recall@1 0.880, MRR 0.940, citation
   accuracy 0.920, decline accuracy 0.222; 0 leaks in every configuration), and `evals/thresholds.json` is set one
   point below each measured value.
+- **A larger held-out eval set.** `evals/golden/questions_heldout.jsonl` adds 237 questions written after the
+  gated set's results and never used for tuning: at least three paraphrases for every one of the 59 documents,
+  each restricted document asked by every persona not cleared for it (21 restricted probes), kiosk questions about
+  staff procedures, questions nothing answers, off-topic and ambiguous questions. `scripts/rag_eval.py` reports
+  the gated set and the full set of 296, the number of leak checks (1,480 per configuration on the full set, 144
+  of them restricted probes) and declines by category. The gated numbers and `evals/thresholds.json` are
+  unchanged; the held-out set has no quality thresholds, and the leak gate covers it. On the full set hybrid
+  retrieval measures recall@1 0.838, recall@4 0.983, MRR 0.903, citation accuracy 0.698, answer-contains 0.808
+  and decline accuracy 0.246, with 0 leaks; the misses stay in the set and are described in `evals/README.md`.
+  The console's Answer quality screen shows the full set; its in-browser re-run covers the gated set.
+- **How the sample numbers were set.** Usage and impact gains a panel listing every headline figure (staffing
+  ratios, employees using it, questions per employee, hours saved, loaded hourly cost, infrastructure cost,
+  answered from documents, helpful ratings, response time, restricted content withheld) with its sample value,
+  the assumption behind it and its published source. The table lives in `scripts/generate_sample_company.py`
+  (`headline_figures`, written to `demo/data/sample_company.json`) and docs/console.md quotes it; a test fails if a
+  cited figure lacks a URL. No published source has been checked yet, so every figure is labelled an assumption
+  and the generated numbers are unchanged.
 
 ### Fixed
 - The assistant showed "Good morning, priya" and the generic staff questions while Pyodide loaded, before the

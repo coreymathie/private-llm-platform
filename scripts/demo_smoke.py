@@ -267,6 +267,18 @@ def demo(run: Run, p, port: int, pyodide_dir: Path | None) -> None:
     page.click("[data-range='30']")
     page.wait_for_selector("[data-range='30'][aria-pressed='true']")
     run.ok("demo overview: business impact for the sample company (8 KPIs, daily chart, departments, range switch)")
+    figures = json.loads((ROOT / "demo" / "data" / "sample_company.json").read_text())["benchmarks"]
+    rows = page.locator("#sampleSources tbody tr")
+    expect(rows).to_have_count(len(figures))
+    for b in figures:
+        row = page.locator(f'#sampleSources tr[data-figure="{b["id"]}"]')
+        expect(row).to_have_attribute("data-status", b["status"])
+        if b["status"] == "cited":
+            expect(row.locator("a")).to_have_attribute("href", b["source"]["url"])
+        else:
+            expect(row).to_contain_text("Assumption")
+    cited = sum(b["status"] == "cited" for b in figures)
+    run.ok(f"demo overview: sample-figures panel lists {len(figures)} figures ({cited} cited with a link)")
     run.shot(page, "demo-overview-business")
     run.shot(page, "console-business", full=False)  # README image (docs/img/console-business.png)
     page.keyboard.press("Control+k")
@@ -560,11 +572,14 @@ def demo(run: Run, p, port: int, pyodide_dir: Path | None) -> None:
     goto(page, "evals")
     expect(page.locator("#gate")).to_have_text("Pass")
     assert page.locator("#scorecard tbody tr").count() == 4
+    committed = json.loads((ROOT / "demo" / "data" / "rag_eval.json").read_text())["report"]["full"]
+    expect(page.locator("#fullSet h2")).to_contain_text(f"{committed['questions']} questions")
+    assert page.locator("#fullScorecard tbody tr").count() == 4
     page.click('#scorecard tr[data-config="bm25+none"]')
     expect(page.locator("#view")).to_contain_text("not answered perfectly · bm25+none")
     page.click("#runEval")
     expect(page.locator("#evalMatch")).to_contain_text("Identical", timeout=180_000)
-    run.ok("demo evals: gate passes; scripts/rag_eval.py re-run in the browser matches the committed results")
+    run.ok("demo evals: gate passes; held-out set shown; the gated re-run in the browser matches the committed results")
     run.shot(page, "demo-evals")
 
     # 9. Settings

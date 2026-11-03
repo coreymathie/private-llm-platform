@@ -161,7 +161,8 @@ async function overview(view, S) {
       </dl>
       <p class="muted small" style="margin-top:10px">Assumptions: ${esc(a.note)}</p>
     </div>
-  </div>`;
+  </div>
+  ${sourcesPanel(data.benchmarks || [])}`;
   view.querySelectorAll("[data-range]").forEach((b) => b.addEventListener("click", () => { S.range = Number(b.dataset.range); overview(view, S); }));
   const bx = $("#bannerX", view);
   if (bx) bx.onclick = () => { S.bannerHidden = true; $("#sampleBanner", view).remove(); };
@@ -173,6 +174,20 @@ async function overview(view, S) {
   // Topic counts are summed from the same daily rows as the question totals, so every range adds up.
   const topicTotals = data.topics.map((x) => ({ label: x.topic, value: days.reduce((a, d) => a + ((d.topics || {})[x.topic] || 0), 0) })).sort((a, b) => b.value - a.value);
   top.innerHTML = hbars(topicTotals, { ariaLabel: "Questions by topic", width: chartWidth(top, 560), fmtValue: num, color: "var(--series-3)", labelWidth: Math.min(260, Math.round(chartWidth(top, 560) * 0.48)) });
+}
+
+// "How these sample numbers were set": every headline figure, the assumption behind it, and its published source
+// when one has been checked (scripts/generate_sample_company.py, headline_figures; docs/console.md quotes it).
+function sourcesPanel(rows) {
+  if (!rows.length) return "";
+  const cited = rows.filter((b) => b.source).length;
+  const cite = (b) => b.source
+    ? `<a href="${esc(b.source.url)}" rel="noopener" target="_blank">${esc(b.source.title)}</a>, ${esc(b.source.publisher)}, <span translate="no">${esc(b.source.year)}</span>: “${esc(b.source.quote)}”`
+    : '<span class="pill sim">Assumption</span> no public benchmark cited';
+  return `<div class="card" style="margin-top:16px" id="sampleSources"><div class="card-head"><div><h2>How these sample numbers were set</h2><p>The figures above are generated sample data, not measurements. ${cited ? `${cited} of ${rows.length} are calibrated to the published source shown; the rest` : "Each"} rests on the stated assumption.</p></div></div>
+    <div class="table-wrap"><table class="sources"><thead><tr><th>Figure</th><th>Sample value, last 30 days</th><th>How it was set</th><th>Source</th></tr></thead><tbody>
+      ${rows.map((b) => `<tr data-figure="${esc(b.id)}" data-status="${esc(b.status)}"><td><b>${esc(b.figure)}</b></td><td class="small" translate="no">${esc(b.value)}</td><td class="small">${esc(b.basis)}</td><td class="small">${cite(b)}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
 }
 
 function deptTable(rows) {
@@ -805,12 +820,15 @@ async function evals(view, S) {
   if (!configs.includes(S.evalConfig)) S.evalConfig = "hybrid+none";
   const r = rep.results[S.evalConfig];
   const gatePass = data.problems.length === 0;
-  const leaks = configs.reduce((s, k) => s + rep.results[k].acl_leaks, 0);
+  const full = rep.full || null;  // gated + held-out questions: reported, leak-gated, no quality thresholds
+  const leakResults = full ? full.results : rep.results;
+  const leaks = configs.reduce((s, k) => s + leakResults[k].acl_leaks, 0);
+  const checks = configs.reduce((s, k) => s + leakResults[k].acl_leak_checks, 0);
   $("#ev", view).innerHTML = `
-  <div class="banner info"><strong>Measured, not simulated.</strong> ${rep.questions} questions asked by the people on the Chat screen against the Cypress Harbor library itself: ${rep.documents} documents in ${rep.collections} collections, ${rep.restricted_documents} of them restricted. ${rep.answerable} have an answer in a document the asker may read; ${rep.declines} should be declined, because nothing answers them or the answer is in a document the asker is not cleared for. The questions are paraphrased the way staff ask and were written after the library, which was not tuned to them. It measures finding, citing and declining; it isn't a test of a large language model's writing.<span class="tech-only"> k=${rep.k}. Embedder: ${esc(rep.embedder)}. Answers: ${esc(rep.answerer)}. Produced by <code>${esc(data.generated_by)}</code>.</span></div>
+  <div class="banner info"><strong>Measured, not simulated.</strong> ${rep.questions} questions asked by the people on the Chat screen against the Cypress Harbor library itself: ${rep.documents} documents in ${rep.collections} collections, ${rep.restricted_documents} of them restricted. ${rep.answerable} have an answer in a document the asker may read; ${rep.declines} should be declined, because nothing answers them or the answer is in a document the asker is not cleared for. The questions are paraphrased the way staff ask and were written after the library, which was not tuned to them.${full ? ` A larger held-out set of ${full.heldout} more questions, written later and never used for tuning, is reported below without quality thresholds.` : ""} It measures finding, citing and declining; it isn't a test of a large language model's writing.<span class="tech-only"> k=${rep.k}. Embedder: ${esc(rep.embedder)}. Answers: ${esc(rep.answerer)}. Produced by <code>${esc(data.generated_by)}</code>.</span></div>
   <div class="grid kpis four" style="margin-top:16px">
     <div class="card kpi"><div class="label">Release check</div><div translate="no" class="value ${gatePass ? "ok" : "bad"}" id="gate">${gatePass ? "Pass" : "Fail"}</div><div class="sub" translate="no">${gatePass ? "every gated metric meets its threshold" : esc(data.problems.join("; "))}</div></div>
-    <div class="card kpi"><div class="label">ACL leaks</div><div translate="no" class="value ${leaks ? "bad" : "ok"}">${leaks}</div><div class="sub" translate="no">times a restricted document reached someone not cleared for it (must be 0)</div></div>
+    <div class="card kpi"><div class="label">ACL leaks</div><div translate="no" class="value ${leaks ? "bad" : "ok"}">${leaks}</div><div class="sub" translate="no">times a restricted document reached someone not cleared for it (must be 0), in ${fmt(checks)} checks across the ${configs.length} search methods</div></div>
     <div class="card kpi"><div class="label">Right document ranked first</div><div translate="no" class="value">${pct(r["recall@1"])}</div><div class="sub" translate="no">in the top ${rep.k}: ${pct(r[`recall@${rep.k}`])}<span class="tech-only"> · recall@1 · MRR ${r.mrr.toFixed(3)} · ${esc(S.evalConfig)}</span></div></div>
     <div class="card kpi"><div class="label">Cites only the right document</div><div translate="no" class="value">${pct(r.citation_accuracy)}</div><div class="sub" translate="no">answer has the key fact: ${pct(r.answer_contains)} · declines when it should: ${pct(r.decline_accuracy)}</div></div>
   </div>
@@ -823,6 +841,11 @@ async function evals(view, S) {
       }).join("")}<td class="num" translate="no">${rep.results[k].acl_leaks}</td></tr>`).join("")}
     </tbody></table></div>
   </div>
+  ${full ? `<div class="card" style="margin-top:16px" id="fullSet"><div class="card-head"><div><h2>Larger held-out set · ${fmt(full.questions)} questions</h2><p>The ${fmt(rep.questions)} gated questions plus ${fmt(full.heldout)} held out: ${fmt(full.answerable)} answerable, ${fmt(full.declines)} to decline (restricted documents asked by people not cleared for them, staff procedures asked at the kiosk, questions nothing answers, off-topic and ambiguous questions). Not gated on quality; any ACL leak fails the release check.</p></div></div>
+    <div class="table-wrap"><table id="fullScorecard" translate="no"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">ACL leaks</th></tr></thead><tbody>
+      ${configs.map((k) => `<tr><td><code>${esc(k)}</code></td>${METRICS.map(([m]) => `<td class="num" translate="no">${full.results[k][m].toFixed(3)}</td>`).join("")}<td class="num" translate="no">${full.results[k].acl_leaks}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="muted small" style="margin-top:8px" translate="no">${fmt(full.results[configs[0]].acl_leak_checks)} leak checks per configuration, ${fmt(full.results[configs[0]].restricted_probes)} of them a restricted document's question asked by someone not cleared for it.</p></div>` : ""}
   <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>Questions not answered perfectly · ${esc(S.evalConfig)}</h2><p>Right document first, cited alone, and the key fact present; or, for a question to decline, "I don't know" with no citation. Click a search method above to switch.</p></div></div>
     ${r.failures.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Asked by</th><th>Question</th><th>Expected</th><th class="num">Rank</th><th>Cited</th><th>Result</th></tr></thead><tbody>
       ${r.failures.map((f) => { const q = data.questions[f.id] || {}; const decline = !q.doc; return `<tr><td class="mono small">${esc(f.id)}</td><td class="small">${esc(personaName(S, q.persona || ""))}</td><td>${esc(q.question)}</td><td class="small">${decline ? "decline" : esc(q.doc)}</td><td class="num" translate="no">${f.rank || "–"}</td><td class="small">${esc(f.cited.join(", ") || "none")}</td><td>${decline ? '<span class="pill bad">answered</span>' : f.contains ? '<span class="pill ok">fact present</span>' : '<span class="pill bad">fact missing</span>'}</td></tr>`; }).join("")}

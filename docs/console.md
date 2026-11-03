@@ -64,6 +64,31 @@ of an internal Copilot-style assistant; administration and governance sit behind
   labelled **sample** everywhere, apart from **measured** results (Answer quality, Benchmarks) and the
   **simulated** requests made in the tab.
 
+## How the sample numbers were set
+
+The Usage and impact figures are generated **sample** data. Each headline figure, the assumption behind it and its
+published source (once one is checked) live in one table in
+[`scripts/generate_sample_company.py`](../scripts/generate_sample_company.py) (`headline_figures`, written to
+`demo/data/sample_company.json`); the console's *How these sample numbers were set* panel and the table below
+render from it, and a test keeps them identical. A figure is marked cited only with a source that was fetched
+and read, with its title, publisher, year, URL and the quoted sentence; a test fails if a cited figure has no URL.
+No figure is cited yet: the published benchmarks named in the second column (NCUA call-report staffing ratios,
+surveys of generative AI use and time savings, the BLS Employer Costs for Employee Compensation, GPU list prices,
+help-desk resolution rates) have not been checked against these values, so each figure is an assumption.
+
+| Figure | Sample value (last 30 days) | How it was set | Source |
+|---|---|---|---|
+| Staffing ratios | 340 employees for 92,400 members and $1.4B in assets: 272 members and $4.1M in assets per employee | Set for a mid-size credit union; to be checked against NCUA call-report ratios (members and assets per full-time-equivalent employee). | Assumption (no public benchmark cited) |
+| Employees using it | 293 of 340 employees (86%) asked at least one question in 30 days; 217 on an average workday | Department adoption shares in STAFFING for a sanctioned internal assistant open to every employee; to be checked against published rates of generative AI use among employees. | Assumption (no public benchmark cited) |
+| Questions per active employee | 3.0 per workday (14,430 in 30 days) | Per-department questions per active user per workday (1.2 to 4.5 in STAFFING). | Assumption (no public benchmark cited) |
+| Hours saved | 6 minutes per cited answer: 1,337 hours in 30 days, 1.1 hours per active employee per week (2.7% of a 40-hour week) | Minutes saved versus searching shared drives or asking a colleague; to be checked against published figures for time spent searching for information and self-reported time savings from generative AI. | Assumption (no public benchmark cited) |
+| Loaded hourly cost | $52 per hour | Wages plus benefits per hour worked; to be checked against the BLS Employer Costs for Employee Compensation for financial activities. | Assumption (no public benchmark cited) |
+| Infrastructure cost | $4,200 per month: $0.31 per answer | One on-prem server with 2 x NVIDIA L40S, with power and support; to be checked against hardware and cloud GPU list prices. | Assumption (no public benchmark cited) |
+| Answered from documents | 92.6% of questions answered with citations | The share that finds nothing to cite falls from about 11% to about 7% over 90 days as the library fills its gaps; to be checked against published help-desk and policy-question resolution rates. | Assumption (no public benchmark cited) |
+| Answers rated helpful | 91.5% of 2,757 ratings; 21% of answers rated | Rating rate and helpful share chosen for illustration. | Assumption (no public benchmark cited) |
+| Response time | median 1.6 s, slowest-day 95th percentile 4.5 s | Chosen for illustration; the gateway's own overhead is measured separately (docs/benchmarks.md). | Assumption (no public benchmark cited) |
+| Restricted content withheld | 2.2% of questions | Share of questions that touch a document the asker is not cleared for (1.8% to 3% a day). | Assumption (no public benchmark cited) |
+
 ## Business and technical views
 
 The header switch (or `?view=technical`) selects the audience. The business view shows what employees and
@@ -93,14 +118,14 @@ and a collapsible sidebar. A five-step guided tour is offered on the first visit
 | Screen | Function |
 |---|---|
 | Ask | Chat with streamed answers, numbered citations and source cards; a citation opens the document with the quoted passage highlighted, its owner, version, review date and who may read it. Conversation history, suggested questions per person, copy / ask again / helpful / not helpful, ask as someone else or compare two people side by side, search one collection or all. Technical view: retrieval mode, reranker, passage count, model-only chat (readers get 403) and a retrieval-details table per answer (scores, access rule, injection flags, audit line) |
-| Usage and impact | For the sample credit union over 7, 30 or 90 days: questions answered, share answered from documents with citations, employees using it, hours saved and cost per answer (with stated assumptions), restricted content withheld, member data sent outside (zero), answers rated helpful, each against the previous period; questions per day; adoption by department; topics; response time; knowledge-base collections and who may read them; governance checks; recent activity |
+| Usage and impact | For the sample credit union over 7, 30 or 90 days: questions answered, share answered from documents with citations, employees using it, hours saved and cost per answer (with stated assumptions), restricted content withheld, member data sent outside (zero), answers rated helpful, each against the previous period; questions per day; adoption by department; topics; response time; knowledge-base collections and who may read them; governance checks; recent activity; how each sample number was set, with its assumption or source |
 | Usage and impact › This session | Requests, identities, collections and documents, audit status and access decisions for what was done in this tab; guided "what to try" cards |
 | Documents | The library with titles, owners and review dates, a filter, add or upload, per-collection and per-document access lists, and a plain-language access matrix of who can read which document |
 | People and keys | People and applications with their roles and groups; API keys with usage against the rate limit, burst test and revoke (technical view); SSO group-to-role mapping |
 | Audit log | The hash-chained log with readable event names, filters, search and paging; each row opens a decision timeline (sign-in, access decision, retrieval, sources, answer, hashes). "Log intact" check; demo mode adds a tamper-detection test |
 | Access policy | The policy in effect, in plain language, then the runtime policy as JSON, validated with the gateway's own types and `identity.check_role`, applied and audited, with a "try a change" scenario before and after |
 | Models | Backend health, served models, off/warn/enforce policy; the technical view adds digests, lock-file verification and validation, and ML-BOM model components |
-| Answer quality | The `scripts/rag_eval.py` scorecard per configuration against `evals/thresholds.json`, measured on the Cypress Harbor library itself with 59 questions asked as the five people (including questions to decline), and the questions not answered perfectly with who asked them; demo mode re-runs the eval in the browser and compares |
+| Answer quality | The `scripts/rag_eval.py` scorecard per configuration against `evals/thresholds.json`, measured on the Cypress Harbor library itself with 59 gated questions, plus the 296-question set with the held-out questions (no thresholds), asked as the five people (including questions to decline), and the questions not answered perfectly with who asked them; demo mode re-runs the gated set in the browser and compares |
 | Settings | Mode, credential (live), modules running in the tab (technical view), and what is simulated |
 
 ## Running the console against the gateway
@@ -134,7 +159,7 @@ The console added these endpoints, all admin-only: `GET /admin/overview`, `GET /
 The browser engine runs under CPython in the test suite (`tests/test_demo_engine.py`,
 `tests/test_console_engine.py`). `scripts/demo_smoke.py` drives the real console headlessly with Playwright in
 both modes: every screen and its key interaction in demo mode, then the gateway and the simulated backend under
-uvicorn in live mode (46 checks, no console errors, no horizontal scroll at 390 px). See
+uvicorn in live mode (47 checks, no console errors, no horizontal scroll at 390 px). See
 [testing.md](testing.md).
 
 ## Publishing the demo

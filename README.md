@@ -16,7 +16,7 @@ outside the model, in front of a private inference server.**
 | **Architecture** | One FastAPI gateway (OpenAI-compatible API) in front of Ollama or any OpenAI-compatible server (vLLM, SGLang, TGI, NVIDIA NIM). SQLite for keys, documents and vectors; a hash-chained JSONL audit log. |
 | **Key decisions** | Pluggable inference backend; on-host embeddings with hybrid BM25 + vector retrieval; OIDC tokens alongside API keys; envelope encryption; pinned model digests. Each recorded as an ADR with its trade-off. |
 | **Controls** | API keys and OIDC SSO with group roles; collection and document access lists applied before scoring; rate limits; PII redaction; SHA-256 audit chain; model lock file with an off/warn/enforce policy and a CycloneDX ML-BOM. |
-| **Evidence** | 253 automated tests; an answer-quality eval gate in CI over the sample credit union's own library (59 questions asked as 5 personas, 0 ACL leaks, hybrid citation accuracy 0.920); a 46-check headless browser smoke test across both console modes; 8 ADRs. |
+| **Evidence** | 256 automated tests; an answer-quality eval gate in CI over the sample credit union's own library (59 gated questions plus 237 held out, asked as 5 personas; 0 ACL leaks in 1,480 leak checks per configuration; hybrid citation accuracy 0.920 on the gated set, 0.698 on all 296); a 47-check headless browser smoke test across both console modes; 8 ADRs. |
 | **Out of scope** | SCIM provisioning, ACL sync from source systems, a KMS key provider, model signature verification and multi-replica operation are roadmap items. No model-serving benchmarks are published. |
 | **Try it** | [Live console](https://coreymathie.github.io/private-llm-platform/demo/): the gateway's real Python modules in your browser through Pyodide. Locally, `docker compose up` needs no model or GPU. |
 
@@ -163,22 +163,26 @@ certifications.
 
 ## Evaluation and evidence
 
-**Tests.** 253 automated tests, all passing, run in CI with lint, format, `shellcheck` and `helm lint`; upstream
+**Tests.** 256 automated tests, all passing, run in CI with lint, format, `shellcheck` and `helm lint`; upstream
 HTTP is mocked for both backend wire formats, and the docs are tested so that every referenced test and code
 symbol exists. Coverage by file: [docs/testing.md](docs/testing.md).
 
 ### Quality
 
-**Answer-quality eval gate (measured).** `scripts/rag_eval.py --check` runs the real ingestion, access-control
-and retrieval code over the console's own sample library (59 Cypress Harbor documents in 6 collections, 3 of them
-restricted) with 59 paraphrased staff and member questions, each asked as the persona who would ask it: 50 with an
-answer in a document the asker may read, 9 that should be declined (nothing answers them, or the answer is in a
-document the asker is not cleared for). Every question is also retrieved as every persona and checked against
-the catalog's access lists; any passage a persona may not read is a leak. CI fails on a drop below
-`evals/thresholds.json` (set one point under these values) or any leak. Measured at k=4 with the demo's hashed
-bag-of-words embedder (not a neural model) and extractive answerer (no LLM), so it is a regression baseline
-rather than a quality claim; the low decline accuracy reflects the answerer's fixed relevance floor
-([evals/README.md](evals/README.md), [ADR 0006](docs/adr/0006-hybrid-retrieval-and-rag-evals.md)):
+**Answer-quality eval (measured).** `scripts/rag_eval.py --check` runs the real ingestion, access-control and
+retrieval code over the console's own sample library (59 Cypress Harbor documents in 6 collections, 3 of them
+restricted) with paraphrased staff and member questions, each asked as the persona who would ask it. Questions
+either have an answer in a document the asker may read, or should be declined: the answer is in a restricted
+document the asker is not cleared for, a staff procedure is asked at the lobby kiosk, nothing in the library
+answers it, it is off-topic, or it is ambiguous. Every question is also retrieved as every persona and checked
+against the catalog's access lists; any passage a persona may not read is a leak. Measured at k=4 with the demo's
+hashed bag-of-words embedder (not a neural model) and extractive answerer (no LLM), so it is a regression
+baseline rather than a quality claim ([evals/README.md](evals/README.md),
+[ADR 0006](docs/adr/0006-hybrid-retrieval-and-rag-evals.md)).
+
+*Before*: the gated set, `evals/golden/questions.jsonl`, 59 questions (50 answerable, 9 to decline). CI
+fails on a drop below `evals/thresholds.json` (set one point under these values) or any leak. These numbers are
+unchanged by the larger set.
 
 | Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | ACL leaks |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -186,6 +190,31 @@ rather than a quality claim; the low decline accuracy reflects the answerer's fi
 | `bm25+none` | 1.000 | 1.000 | 1.000 | 0.900 | 0.860 | 0.111 | 0 |
 | `hybrid+none` | 0.880 | 1.000 | 0.940 | 0.920 | 0.840 | 0.222 | 0 |
 | `hybrid+lexical` | 0.960 | 1.000 | 0.975 | 0.880 | 0.860 | 0.222 | 0 |
+
+ACL leak checks per configuration: 295 retrievals (every question as every persona, top 12), 28 of them a restricted document's question asked by a persona not cleared for it.
+
+*After*: the gated set plus 237 held-out questions in `evals/golden/questions_heldout.jsonl`, 296 in all
+(235 answerable, at least 3 for every document; 61 to decline, including each restricted document asked by every
+persona not cleared for it). The held-out questions were written after the first set's results, are not used
+for tuning, and are not gated on quality; the leak gate covers every question.
+
+| Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | ACL leaks |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `vector+none` | 0.774 | 0.949 | 0.853 | 0.698 | 0.808 | 0.246 | 0 |
+| `bm25+none` | 0.906 | 0.979 | 0.938 | 0.702 | 0.808 | 0.131 | 0 |
+| `hybrid+none` | 0.838 | 0.983 | 0.903 | 0.698 | 0.808 | 0.246 | 0 |
+| `hybrid+lexical` | 0.877 | 0.970 | 0.916 | 0.689 | 0.804 | 0.295 | 0 |
+
+ACL leak checks per configuration: 1480 retrievals (every question as every persona, top 12), 144 of them a restricted document's question asked by a persona not cleared for it.
+
+```bash
+python scripts/rag_eval.py            # both tables; add --check for the CI gate, --json for raw results
+```
+
+On the larger set, citation accuracy falls from 0.920 to 0.698 (hybrid): the extractive answerer often quotes a
+sentence from a second document beside the right one, or answers from a neighbouring document, and most
+questions that should be declined are answered from a loosely related document instead. Both are listed under
+[Limitations](#limitations-and-residual-risk).
 
 ### Benchmarks
 
@@ -207,7 +236,7 @@ weights, so [docs/benchmarks.md](docs/benchmarks.md) provides a method, a result
 **Storage (measured).** Encryption at rest and backup/restore time on a synthetic 3,883-passage collection:
 [docs/operations.md](docs/operations.md#encryption-at-rest) (`scripts/bench_storage.py`).
 
-**Console (measured).** `scripts/demo_smoke.py` drives the real console headlessly in both modes: 46 checks, no
+**Console (measured).** `scripts/demo_smoke.py` drives the real console headlessly in both modes: 47 checks, no
 console errors, no horizontal scroll at 390 px, including the start-up screen while Pyodide loads and the
 figures under a French browser locale.
 
@@ -241,6 +270,11 @@ backup, restore, model pinning), [docs/configuration.md](docs/configuration.md),
 - **Encryption scope.** Opt-in; titles, access lists and API keys stay readable; only a local keyring ships.
 - **Scale.** One gateway process per host (in-memory rate limits, process-local audit writer); exact search
   and per-question BM25 tokenization.
+- **Answer quality on the larger eval set.** On the 296-question set the demo's extractive answerer cites only
+  the right document for 0.698 of answerable questions (hybrid) and declines 0.246 of the questions it should
+  decline: it adds a sentence from a second document, answers from a neighbouring one, and declines only below a
+  fixed similarity floor, so restricted-document, off-topic and ambiguous questions are usually answered from an
+  open document (never a restricted one: 0 leaks). These cases stay in the set as failures.
 - **Validation gaps.** Answer faithfulness with a real model is not evaluated; the cross-encoder reranker,
   export to a live OTel collector, and live vLLM/SGLang/TGI/NIM servers are untested here; the Helm chart is
   validated by schema checks and a template-rendering harness, not by `helm install` on a cluster.

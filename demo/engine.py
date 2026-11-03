@@ -1096,13 +1096,17 @@ class DemoEngine:
     # ---------- evals ----------
 
     async def run_rag_eval(self) -> dict:
-        """scripts/rag_eval.py in this runtime (it uses its own throwaway database and restores settings)."""
+        """scripts/rag_eval.py in this runtime (it uses its own throwaway database and restores settings).
+
+        The gated set only, which the console compares with the committed results; the held-out set is reported
+        from the committed file (re-running it here would take minutes in WebAssembly).
+        """
         sys.modules.setdefault("demo", types.ModuleType("demo"))
         sys.modules.setdefault("demo.engine", sys.modules[__name__])
         from scripts import rag_eval
 
         started = time.perf_counter()
-        report = await rag_eval.evaluate_async(4)
+        report = await rag_eval.evaluate_async(4, heldout=False)
         backends.set_backend(DemoBackend())  # evaluate() clears the backend when it finishes
         problems = rag_eval.check(report, json.loads(rag_eval.THRESHOLDS.read_text()))
         return {"report": report, "problems": problems, "seconds": round(time.perf_counter() - started, 2)}

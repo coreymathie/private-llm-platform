@@ -2985,5 +2985,87 @@
    "title": "Prompt-injection text found in an uploaded vendor PDF",
    "detail": "The answer kept the vendor's terms but ignored the embedded instructions; the document was flagged for the vendor-management team."
   }
+ ],
+ "benchmarks": [
+  {
+   "id": "staffing",
+   "figure": "Staffing ratios",
+   "value": "340 employees for 92,400 members and $1.4B in assets: 272 members and $4.1M in assets per employee",
+   "basis": "Set for a mid-size credit union; to be checked against NCUA call-report ratios (members and assets per full-time-equivalent employee).",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "adoption",
+   "figure": "Employees using it",
+   "value": "293 of 340 employees (86%) asked at least one question in 30 days; 217 on an average workday",
+   "basis": "Department adoption shares in STAFFING for a sanctioned internal assistant open to every employee; to be checked against published rates of generative AI use among employees.",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "questions",
+   "figure": "Questions per active employee",
+   "value": "3.0 per workday (14,430 in 30 days)",
+   "basis": "Per-department questions per active user per workday (1.2 to 4.5 in STAFFING).",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "time_saved",
+   "figure": "Hours saved",
+   "value": "6 minutes per cited answer: 1,337 hours in 30 days, 1.1 hours per active employee per week (2.7% of a 40-hour week)",
+   "basis": "Minutes saved versus searching shared drives or asking a colleague; to be checked against published figures for time spent searching for information and self-reported time savings from generative AI.",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "hourly_cost",
+   "figure": "Loaded hourly cost",
+   "value": "$52 per hour",
+   "basis": "Wages plus benefits per hour worked; to be checked against the BLS Employer Costs for Employee Compensation for financial activities.",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "infrastructure",
+   "figure": "Infrastructure cost",
+   "value": "$4,200 per month: $0.31 per answer",
+   "basis": "One on-prem server with 2 x NVIDIA L40S, with power and support; to be checked against hardware and cloud GPU list prices.",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "answer_rate",
+   "figure": "Answered from documents",
+   "value": "92.6% of questions answered with citations",
+   "basis": "The share that finds nothing to cite falls from about 11% to about 7% over 90 days as the library fills its gaps; to be checked against published help-desk and policy-question resolution rates.",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "helpful",
+   "figure": "Answers rated helpful",
+   "value": "91.5% of 2,757 ratings; 21% of answers rated",
+   "basis": "Rating rate and helpful share chosen for illustration.",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "latency",
+   "figure": "Response time",
+   "value": "median 1.6 s, slowest-day 95th percentile 4.5 s",
+   "basis": "Chosen for illustration; the gateway's own overhead is measured separately (docs/benchmarks.md).",
+   "status": "assumption",
+   "source": null
+  },
+  {
+   "id": "restricted",
+   "figure": "Restricted content withheld",
+   "value": "2.2% of questions",
+   "basis": "Share of questions that touch a document the asker is not cleared for (1.8% to 3% a day).",
+   "status": "assumption",
+   "source": null
+  }
  ]
 }

@@ -28,9 +28,10 @@ embedding or ranking was unmeasured.
    console's sample library (`demo/data/library.json`: 59 documents in 6 collections, with collection and
    document access lists) and a golden set (`evals/golden/questions.jsonl`: the persona who asks, the expected
    document and answer phrase, or a question to decline) with the demo's deterministic embedder and extractive
-   answerer, so it runs offline in seconds. It fails if recall@1, recall@k, MRR, citation accuracy,
-   answer-contains or decline accuracy drop below `evals/thresholds.json`, or if any persona retrieves a passage
-   from a document the catalog's access lists say it may not read.
+   answerer, so it runs offline. It fails if recall@1, recall@k, MRR, citation accuracy, answer-contains or
+   decline accuracy drop below `evals/thresholds.json`, or if any persona retrieves a passage from a document the
+   catalog's access lists say it may not read. A larger held-out set (`evals/golden/questions_heldout.jsonl`) is
+   reported alongside and covered by the leak gate, without quality thresholds.
 
 **Implementation and evidence.** `gateway/retrieval.py`, `gateway/rag.py::retrieve`, `scripts/rag_eval.py`,
 `evals/`. Tests: `tests/test_retrieval.py`,
@@ -38,8 +39,8 @@ embedding or ranking was unmeasured.
 
 ## Consequences
 
-**Measured baseline** (k = 4; demo hashed bag-of-words embedder, not a neural model; 59 questions, 50 answerable
-and 9 to decline, over the 59-document sample library, asked as 5 personas):
+**Measured baseline** (k = 4; demo hashed bag-of-words embedder, not a neural model; the gated set of 59 questions,
+50 answerable and 9 to decline, over the 59-document sample library, asked as 5 personas):
 
 | Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | ACL leaks |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -47,6 +48,10 @@ and 9 to decline, over the 59-document sample library, asked as 5 personas):
 | `bm25+none` | 1.000 | 1.000 | 1.000 | 0.900 | 0.860 | 0.111 | 0 |
 | `hybrid+none` | 0.880 | 1.000 | 0.940 | 0.920 | 0.840 | 0.222 | 0 |
 | `hybrid+lexical` | 0.960 | 1.000 | 0.975 | 0.880 | 0.860 | 0.222 | 0 |
+
+On the gated set plus 237 held-out questions (296 in all), hybrid retrieval measures recall@1
+0.838, citation accuracy 0.698 and decline accuracy 0.246, still with 0 leaks; the full table and
+the failure analysis are in [evals/README.md](../../evals/README.md#results).
 
 These numbers need careful reading: the questions are paraphrased, but the library and the questions share one
 author, which favors BM25; the embedder is a hashing stand-in, which handicaps the vector ranking; citation

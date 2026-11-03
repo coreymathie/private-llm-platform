@@ -6,14 +6,15 @@ covers, how upstream services are simulated, and how the documentation itself is
 
 ## Scope
 
-- **253 automated tests** (186 through v0.6, 32 added in v0.7, 35 since; parametrized cases counted
+- **256 automated tests** (186 through v0.6, 32 added in v0.7, 38 since; parametrized cases counted
   individually), all passing, run in CI with `ruff check`, `ruff format --check`, `shellcheck` and (CI only)
   `helm lint`.
 - Upstream HTTP is mocked for both backends: Ollama's native API and the OpenAI wire format (chat, SSE
   streaming with usage, embeddings, models, errors before the first token).
 - **Answer-quality evals gate CI.** `scripts/rag_eval.py --check` runs the real ingestion, access-control and
-  retrieval code over the sample library (59 documents, 3 restricted) with 59 golden questions asked as five
-  personas (9 of them to decline) and fails on a drop below `evals/thresholds.json` or any ACL leak. Results and their limits are in
+  retrieval code over the sample library (59 documents, 3 restricted) with 59 gated questions asked as five
+  personas (9 of them to decline) and fails on a drop below `evals/thresholds.json`, or on any ACL leak across
+  those and 237 held-out questions (296 in all, 1,480 leak checks per configuration). Results and their limits are in
   [benchmarks.md](benchmarks.md#retrieval-quality-measured-golden-set).
 - **Documentation is tested.** Every `tests/…::test_name` and `gateway/…::symbol` referenced in `docs/` and the
   README must exist (`tests/test_docs.py`), and every metric the Grafana dashboard queries must be exported
@@ -21,11 +22,11 @@ covers, how upstream services are simulated, and how the documentation itself is
 - **The console is tested.** Its browser engine runs under CPython in the suite
   (`tests/test_demo_engine.py`, `tests/test_console_engine.py`), and `scripts/demo_smoke.py` drives the real
   console headlessly with Playwright in both modes: every screen and its key interaction in demo mode, then the
-  gateway and the simulated backend under uvicorn in live mode (46 checks, no console errors, no horizontal
+  gateway and the simulated backend under uvicorn in live mode (47 checks, no console errors, no horizontal
   scroll at 390 px). The demo pass starts by checking the start-up screen at 0.5 s and 3 s (progress steps and
   download note visible, no raw persona id, no suggested questions, composer disabled) and, once ready, that the
   persona's own questions appear; with `--pyodide-dir` it also measures the Pyodide download quoted in the
-  start-up note (45 checks without it). It ends by loading Usage and impact under a `fr-FR` browser locale and
+  start-up note (46 checks without it). It ends by loading Usage and impact under a `fr-FR` browser locale and
   checking that money still reads "$…" and that every figure element carries `translate="no"`.
 
 ## Coverage by test file
