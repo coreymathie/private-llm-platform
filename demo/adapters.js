@@ -64,6 +64,20 @@ export class DemoAdapter {
     this.info = null;
   }
 
+  // The start-up steps the assistant screen shows while boot() runs (ids match its progress() calls).
+  bootSteps(documents) {
+    return [
+      ["runtime", "Loading the Python runtime"],
+      ["code", "Loading the gateway's code"],
+      ["library", `Loading the sample library (${documents} documents)`],
+      ["index", "Indexing the documents and access lists"],
+    ];
+  }
+  bootNote() {
+    // The size is the Pyodide files boot() loads (scripts/demo_smoke.py measures it and checks this sentence).
+    return "This demo runs the platform's real Python code in your browser. The first load downloads the Python runtime and its packages (about 34 MB before compression), so it can take a little while.";
+  }
+
   async boot(progress) {
     const m = window.CONSOLE_MANIFEST;
     progress("runtime", "active");
@@ -77,13 +91,10 @@ export class DemoAdapter {
       });
     }
     const pyodide = await loadPyodide({ indexURL: PYODIDE_URL });
+    await pyodide.loadPackage(["numpy", "pydantic", "sqlite3"]);
     progress("runtime", "done");
 
-    progress("packages", "active");
-    await pyodide.loadPackage(["numpy", "pydantic", "sqlite3"]);
-    progress("packages", "done");
-
-    progress("files", "active");
+    progress("code", "active");
     const root = "/home/pyodide";
     pyodide.FS.mkdirTree(`${root}/gateway`);
     pyodide.FS.mkdirTree(`${root}/scripts`);
@@ -101,25 +112,25 @@ export class DemoAdapter {
     for (let i = 0; i < m.SCRIPT_FILES.length; i++) {
       this.modules.push({ path: `scripts/${m.SCRIPT_FILES[i]}`, lines: sc[i].split("\n").length, sha: (await sha256(sc[i])).slice(0, 8) });
     }
-    progress("files", "done");
-
-    progress("engine", "active");
     this.pyodide = pyodide;
     this.py = pyodide.runPython(`import sys\nsys.path.insert(0, '${root}')\nimport engine\nengine`);
     this.info = await this.call("info");
     await this.call("create_sample_keys"); // engine.SAMPLE_KEYS: member-faq-portal (public), staff-intranet-search (staff)
-    progress("engine", "done");
+    progress("code", "done");
 
-    progress("samples", "active");
+    progress("library", "active");
     const cat = await libraryCatalog();
     const texts = await Promise.all(cat.documents.map((d) => fetchText(new URL(d.path, location.href))));
     const byFile = Object.fromEntries(cat.documents.map((d, i) => [d.file, texts[i]]));
+    progress("library", "done");
+
+    progress("index", "active");
     const loaded = await this.call("load_library", cat, byFile); // documents, then each collection's access list
     if (loaded.status !== 201) throw new Error(`sample library: ${loaded.detail}`);
     // A little sample traffic so the overview and audit log have something to show (engine.SAMPLE_TRAFFIC).
     await this.call("seed_sample_traffic");
     this.suggest = await this.call("suggestions");
-    progress("samples", "done");
+    progress("index", "done");
     return this.describe();
   }
 
@@ -143,7 +154,8 @@ export class DemoAdapter {
 
   // identity
   personas() { return this.call("personas"); }
-  suggestions() { return this.suggest || LIVE_SUGGESTIONS; }
+  // Empty until the engine has loaded: the screen never shows placeholder questions in place of the persona's own.
+  suggestions() { return this.suggest || { personas: {}, popular_for: {}, default: [], popular: [] }; }
   whoami(persona, collection) { return this.call("whoami", persona, collection); }
   // chat
   ask(persona, collection, question, o = {}) {
@@ -232,6 +244,9 @@ export class LiveAdapter {
     this.remember = storage.get("plp.credential") != null;
     this.meta = null;
   }
+
+  bootSteps() { return [["connect", "Connecting to the gateway"]]; }
+  bootNote() { return "The console is reading this gateway's settings."; }
 
   async boot(progress) {
     progress("connect", "active");

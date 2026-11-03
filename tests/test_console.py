@@ -358,3 +358,35 @@ def test_console_page_loads_only_local_files_and_the_pyodide_cdn():
                 url,
             )
     assert "<script src=" not in html.replace('<script type="module" src="app.js">', "")  # Pyodide loads on demand
+
+
+def test_start_up_screen_names_come_from_the_engine():
+    """The assistant shows display names before Pyodide has loaded the personas; they must match the engine."""
+    from demo.engine import PERSONAS
+
+    js = (DEMO / "assistant.js").read_text()
+    block = js[js.index("const BOOT_NAMES") : js.index("};", js.index("const BOOT_NAMES"))]
+    names = dict(re.findall(r"(\w+): \"([^\"]+)\"", block))
+    assert names == {pid: p["name"] for pid, p in PERSONAS.items()}
+
+
+def test_money_is_formatted_en_us_and_figures_are_not_translatable():
+    """Money renders as "$1,100" / "$93K" whatever the browser locale, and browser page translation (which turns
+    "$1,100" into "1 100 USD") is told to leave figure elements alone; prose stays translatable."""
+    screens, ui = (DEMO / "screens.js").read_text(), (DEMO / "ui.js").read_text()
+    for path in DEMO.glob("*.js"):
+        js = path.read_text()
+        assert "USD" not in js and "currency" not in js, path.name
+        # every number formatted for display names en-US (Date formatting may follow the viewer's locale)
+        for call in re.findall(r"(\w+(?:\([^()]*\))?)\.toLocaleString\(([^)]*)\)", js):
+            receiver, args = call
+            assert receiver == "d" or args.startswith('"en-US"'), (path.name, call)
+    money = screens[screens.index("const money = ") : screens.index("};", screens.index("const money = "))]
+    assert money.count("return `$${") == 3 and 'return "$" + Math.round(n).toLocaleString("en-US")' in money
+    assert "kpi(" in screens and '<div class="value"' not in screens and '<div class="sub">' not in screens
+    assert 'class="kpi-foot" translate="no"' in screens and '<td class="num">' not in screens
+    assert ui.count('<svg class="chart" translate="no"') == 3 and 'translate="no"' not in ui.replace(
+        '<svg class="chart" translate="no"', ""
+    )
+    for path in [*DEMO.glob("*.js"), DEMO / "index.html"]:
+        assert "notranslate" not in path.read_text() and '<html translate="no"' not in path.read_text(), path.name

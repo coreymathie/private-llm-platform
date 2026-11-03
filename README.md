@@ -16,7 +16,7 @@ outside the model, in front of a private inference server.**
 | **Architecture** | One FastAPI gateway (OpenAI-compatible API) in front of Ollama or any OpenAI-compatible server (vLLM, SGLang, TGI, NVIDIA NIM). SQLite for keys, documents and vectors; a hash-chained JSONL audit log. |
 | **Key decisions** | Pluggable inference backend; on-host embeddings with hybrid BM25 + vector retrieval; OIDC tokens alongside API keys; envelope encryption; pinned model digests. Each recorded as an ADR with its trade-off. |
 | **Controls** | API keys and OIDC SSO with group roles; collection and document access lists applied before scoring; rate limits; PII redaction; SHA-256 audit chain; model lock file with an off/warn/enforce policy and a CycloneDX ML-BOM. |
-| **Evidence** | 251 automated tests; an answer-quality eval gate in CI over the sample credit union's own library (59 questions asked as 5 personas, 0 ACL leaks, hybrid citation accuracy 0.920); a 42-check headless browser smoke test across both console modes; 8 ADRs. |
+| **Evidence** | 253 automated tests; an answer-quality eval gate in CI over the sample credit union's own library (59 questions asked as 5 personas, 0 ACL leaks, hybrid citation accuracy 0.920); a 46-check headless browser smoke test across both console modes; 8 ADRs. |
 | **Out of scope** | SCIM provisioning, ACL sync from source systems, a KMS key provider, model signature verification and multi-replica operation are roadmap items. No model-serving benchmarks are published. |
 | **Try it** | [Live console](https://coreymathie.github.io/private-llm-platform/demo/): the gateway's real Python modules in your browser through Pyodide. Locally, `docker compose up` needs no model or GPU. |
 
@@ -163,7 +163,7 @@ certifications.
 
 ## Evaluation and evidence
 
-**Tests.** 251 automated tests, all passing, run in CI with lint, format, `shellcheck` and `helm lint`; upstream
+**Tests.** 253 automated tests, all passing, run in CI with lint, format, `shellcheck` and `helm lint`; upstream
 HTTP is mocked for both backend wire formats, and the docs are tested so that every referenced test and code
 symbol exists. Coverage by file: [docs/testing.md](docs/testing.md).
 
@@ -207,8 +207,9 @@ weights, so [docs/benchmarks.md](docs/benchmarks.md) provides a method, a result
 **Storage (measured).** Encryption at rest and backup/restore time on a synthetic 3,883-passage collection:
 [docs/operations.md](docs/operations.md#encryption-at-rest) (`scripts/bench_storage.py`).
 
-**Console (measured).** `scripts/demo_smoke.py` drives the real console headlessly in both modes: 42 checks, no
-console errors, no horizontal scroll at 390 px.
+**Console (measured).** `scripts/demo_smoke.py` drives the real console headlessly in both modes: 46 checks, no
+console errors, no horizontal scroll at 390 px, including the start-up screen while Pyodide loads and the
+figures under a French browser locale.
 
 ## Operations
 

@@ -1,6 +1,6 @@
 // Private LLM Platform console: boot, routing, guided tour. Corey Mathie, 2026.
 import { DemoAdapter, LiveAdapter, detectMode } from "./adapters.js";
-import { loadCatalog } from "./assistant.js";
+import { bootPanel, bootStepsHtml, catalog, loadCatalog } from "./assistant.js";
 import { $, esc, closeOverlays, bindTooltips, toast } from "./ui.js";
 import { SCREENS } from "./screens.js";
 import { crumbs, initShell, openKeys, setActive } from "./shell.js";
@@ -22,7 +22,7 @@ const GROUPS = ["Assistant", "Admin", "Governance"];
 const STATIC = new Set(["chat", "overview"]);
 
 const S = {
-  A: null, info: null, personas: [], titles: null, ready: false, engineError: null,
+  A: null, info: null, personas: [], titles: null, ready: false, engineError: null, boot: { steps: [], note: "" },
   chat: { persona: "priya", persona2: "dana", compare: false, collection: "*", kind: "rag", mode: "hybrid", reranker: "none", top_k: 4, sessions: [], current: null, pane: null, draft: "" },
   docsState: { collection: "policies", addTab: "paste" },
   auditFilter: { event: "", decision: "", q: "" },
@@ -82,12 +82,16 @@ async function boot() {
   buildNav();
   $("#boot").classList.add("hidden");
   await loadCatalog();
+  S.boot = { steps: S.A.bootSteps(catalog().documents.length).map(([id, label]) => ({ id, label, state: "" })), note: S.A.bootNote() };
+  paintBoot();
   route();
   try {
-    S.info = await S.A.boot(() => {});
+    S.info = await S.A.boot(progress);
   } catch (err) {
     console.error(err);
     S.engineError = err;
+    S.boot.steps.forEach((s) => { if (s.state === "active") s.state = "fail"; });
+    paintBoot();
     document.body.dataset.ready = "error";
     paintBadge();
     route();
@@ -110,6 +114,18 @@ async function boot() {
   document.body.dataset.ready = "true";
   const skip = new URLSearchParams(location.search).get("tour") === "0";
   if (!skip && store.get("plp.tourDone") !== "1") $("#tourInvite").hidden = false;
+}
+
+// Start-up progress: the steps shown on the assistant (and on any screen that waits for the engine) and in the footer.
+function progress(id, state) {
+  const step = S.boot.steps.find((s) => s.id === id);
+  if (step) step.state = state;
+  paintBoot();
+}
+function paintBoot() {
+  document.querySelectorAll("[data-boot-steps]").forEach((el) => { el.innerHTML = bootStepsHtml(S); });
+  const active = S.boot.steps.find((s) => s.state === "active");
+  if (!S.ready) $("#footMode").textContent = S.engineError ? "Couldn't start" : active ? `Starting: ${active.label.charAt(0).toLowerCase()}${active.label.slice(1)}…` : "Starting…";
 }
 
 // ---------- navigation ----------
@@ -136,12 +152,12 @@ function engineWait(view) {
   if (S.engineError) {
     const demo = S.A?.mode === "demo";
     view.innerHTML = `<div class="card engine-wait error" role="alert"><h2>The assistant couldn't start</h2>
-      <p>${demo ? "This demo runs the platform's real code in your browser. It downloads about 15 MB the first time, and some company networks block that download." : esc(S.engineError.message || S.engineError)}</p>
+      <p>${demo ? "This demo runs the platform's real code in your browser. It downloads the Python runtime and its packages (about 34 MB before compression) the first time, and some company networks block that download." : esc(S.engineError.message || S.engineError)}</p>
       <p class="muted small">Usage and impact still works.<span class="tech-only"> Error: ${esc(S.engineError.message || S.engineError)}</span></p>
       <div class="row"><button class="primary" onclick="location.reload()">Try again</button><a class="btn" href="#/overview">Usage and impact</a></div></div>`;
     return;
   }
-  view.innerHTML = `<div class="card engine-wait"><div class="spinner" aria-hidden="true"></div><h2>Starting the platform</h2><p class="muted">This screen runs the gateway's real code in your browser. It takes a few seconds the first time.</p></div>`;
+  view.innerHTML = `<div class="card engine-wait"><h2>Starting the platform</h2>${bootPanel(S)}</div>`;
 }
 
 async function renderRoute() {

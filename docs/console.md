@@ -25,6 +25,19 @@ and permission-aware retrieval, citations, the audit hash chain, policy validati
 eval. Nothing leaves the page. There is no LLM in the browser; answers are extractive and labelled as
 **simulated**.
 
+**Start-up.** In demo mode the Ask and Usage and impact screens render at once, while Pyodide loads. The assistant
+lists its start-up steps with their progress (loading the Python runtime, the gateway's code and the sample
+library, then indexing the documents and access lists) and notes that the first load downloads the Python
+runtime and its packages (about 34 MB before compression; `scripts/demo_smoke.py` measures the files Pyodide
+requests). Until the engine is ready, names come from a static copy of the personas, suggested questions are
+replaced by a neutral placeholder, and the composer is disabled with "Getting ready…". Other screens show the
+same steps until they can render.
+
+**Figures and page translation.** Numbers and money are formatted en-US ("$1,100", "$93K", "$1.4B", two decimals below $10)
+whatever the browser locale. Elements that hold figures (KPI tiles, tables of numbers, charts, meters, numbers
+inside sentences) carry `translate="no"` so browser page translation leaves them as written; labels and prose
+remain translatable.
+
 ## Sample business: Cypress Harbor Credit Union
 
 The console is set in a sample business so that the platform can be assessed the way an institution would use
@@ -71,7 +84,7 @@ floor on vector similarity; the eval applies the same rule and reports how often
 
 Screens are grouped as Assistant, Admin and Governance, with breadcrumbs, a command palette
 (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> <kbd>K</kbd> or <kbd>/</kbd>), `g` + letter shortcuts (<kbd>?</kbd> lists them)
-and a collapsible sidebar. A five-step guided tour runs on the first visit.
+and a collapsible sidebar. A five-step guided tour is offered on the first visit.
 
 ![Usage and impact: questions answered, answered from documents, employees using it, hours saved, restricted content withheld, cost per answer, and adoption by department for the sample credit union](img/console-business.png)
 
@@ -121,7 +134,7 @@ The console added these endpoints, all admin-only: `GET /admin/overview`, `GET /
 The browser engine runs under CPython in the test suite (`tests/test_demo_engine.py`,
 `tests/test_console_engine.py`). `scripts/demo_smoke.py` drives the real console headlessly with Playwright in
 both modes: every screen and its key interaction in demo mode, then the gateway and the simulated backend under
-uvicorn in live mode (41 checks, no console errors, no horizontal scroll at 390 px). See
+uvicorn in live mode (46 checks, no console errors, no horizontal scroll at 390 px). See
 [testing.md](testing.md).
 
 ## Publishing the demo
