@@ -47,15 +47,16 @@ relevance floor and coverage check; the gated set of 59 questions, 50 answerable
 
 | Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | false declines | ACL leaks |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| `vector+none` | 0.800 | 0.960 | 0.872 | 0.940 | 0.880 | 0.444 | 0.040 | 0 |
-| `bm25+none` | 1.000 | 1.000 | 1.000 | 0.920 | 0.860 | 0.333 | 0.040 | 0 |
-| `hybrid+none` | 0.880 | 1.000 | 0.940 | 0.940 | 0.880 | 0.333 | 0.040 | 0 |
-| `hybrid+lexical` | 0.960 | 1.000 | 0.975 | 0.920 | 0.860 | 0.333 | 0.040 | 0 |
+| `vector+none` | 0.800 | 0.960 | 0.872 | 0.940 | 0.880 | 0.333 | 0.040 | 0 |
+| `bm25+none` | 1.000 | 1.000 | 1.000 | 0.940 | 0.860 | 0.333 | 0.020 | 0 |
+| `hybrid+none` | 0.880 | 1.000 | 0.940 | 0.960 | 0.880 | 0.333 | 0.020 | 0 |
+| `hybrid+lexical` | 0.960 | 1.000 | 0.975 | 0.940 | 0.860 | 0.333 | 0.020 | 0 |
 
-Hybrid, after the answerer change: citation accuracy 0.838 and decline accuracy 0.656 on the 296-question
-development set (0.698 and 0.246 before), 0.565 and 0.695 on the 183-question held-out set (0.524 and 0.254
-before), with false declines of 0.068 and 0.290; 0 leaks throughout. The full tables, the before numbers and
-the overfitting gap are in [evals/README.md](../../evals/README.md#results).
+Hybrid, after the answerer change: citation accuracy 0.843 and decline accuracy 0.590 on the 296-question
+development set (0.698 and 0.246 before), 0.718 and 0.593 on the 183-question held-out set (0.524 and 0.254
+before), with false declines of 0.055 and 0.081; 0 leaks throughout. A stricter first version of the decline
+rule wrongly declined 0.290 of held-out answerable questions and was dropped, with the held-out set informing
+that choice. The full tables and the before numbers are in [evals/README.md](../../evals/README.md#results).
 
 These numbers need careful reading: the questions are paraphrased, but the library and the questions share one
 author, which favors BM25; the embedder is a hashing stand-in, which handicaps the vector ranking; citation

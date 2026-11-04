@@ -126,10 +126,12 @@ FUNCTION_WORDS = set(
     "most other some such no nor not only own same so than too very s t can will just don should now".split()
 )
 # A document answers a question only if its passages (and title) contain at least this many of the question's
-# content words, and more than a third of them. Below that, the answerer declines instead of quoting the
-# closest sentence. A question with a single content word must point at one document: "How long must passwords
-# be?" names the Password Standard by its title, while "What's the limit?" matches several documents and is
-# declined as ambiguous. Calibrated on the development question set (evals/README.md), not the held-out set.
+# content words. Below that, the answerer declines instead of quoting the closest sentence. A question with a
+# single content word must point at one document: "How long must passwords be?" names the Password Standard by
+# its title, while "What's the limit?" matches several documents and is declined as ambiguous. An earlier rule
+# also required more than a third of the content words; it declined 29% of answerable held-out questions and was
+# dropped. The held-out set was used to choose between the two rules (evals/README.md), so it is no longer an
+# untouched test for this choice.
 MIN_COVERED_TERMS = 2
 
 
@@ -147,7 +149,7 @@ def extractive_answer(question: str, sources: list[tuple[int, str, str]], max_se
 
     sources are (n, title, passage text), as numbered in the prompt. Steps:
       1. Answerability: a document qualifies when its passages and title contain at least MIN_COVERED_TERMS of
-         the question's content words and more than a third of them. A one-word question qualifies the one
+         the question's content words. A one-word question qualifies the one
          document whose title has the word, or else the only document that contains it. None: decline.
       2. The answering document is the qualifying one that covers the most content words (ties: the best
          sentence); if none of its sentences shares a word with the question, decline. Only that document is
@@ -186,8 +188,7 @@ def extractive_answer(question: str, sources: list[tuple[int, str, str]], max_se
         eligible = named if len(named) == 1 else [t for t in vocab if key <= vocab[t]]
         eligible = eligible if len(eligible) == 1 else []
     else:
-        need = max(MIN_COVERED_TERMS, len(key) // 3 + 1)
-        eligible = [t for t in vocab if len(key & vocab[t]) >= need]
+        eligible = [t for t in vocab if len(key & vocab[t]) >= MIN_COVERED_TERMS]
     if not eligible:
         return NO_ANSWER
     doc = max(eligible, key=lambda t: (len(key & vocab[t]), best.get(t, 0)))

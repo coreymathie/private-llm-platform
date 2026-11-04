@@ -27,7 +27,7 @@
         "mrr": 0.8717,
         "citation_accuracy": 0.94,
         "answer_contains": 0.88,
-        "decline_accuracy": 0.4444,
+        "decline_accuracy": 0.3333,
         "false_declines": 0.04,
         "acl_leaks": 0,
         "acl_leak_checks": 295,
@@ -46,7 +46,7 @@
             1
           ],
           "restricted_probe": [
-            1,
+            0,
             4
           ]
         },
@@ -172,6 +172,14 @@
             "declined": false
           },
           {
+            "id": "d03",
+            "rank": 0,
+            "cited": [
+              "ofac-screening-procedure.md"
+            ],
+            "declined": false
+          },
+          {
             "id": "d04",
             "rank": 0,
             "cited": [
@@ -203,10 +211,10 @@
         "recall@1": 1.0,
         "recall@4": 1.0,
         "mrr": 1.0,
-        "citation_accuracy": 0.92,
+        "citation_accuracy": 0.94,
         "answer_contains": 0.86,
         "decline_accuracy": 0.3333,
-        "false_declines": 0.04,
+        "false_declines": 0.02,
         "acl_leaks": 0,
         "acl_leak_checks": 295,
         "restricted_probes": 28,
@@ -241,9 +249,11 @@
           {
             "id": "p05",
             "rank": 1,
-            "cited": [],
+            "cited": [
+              "password-and-mfa-standard.md"
+            ],
             "contains": false,
-            "declined": true
+            "declined": false
           },
           {
             "id": "m08",
@@ -344,10 +354,10 @@
         "recall@1": 0.88,
         "recall@4": 1.0,
         "mrr": 0.94,
-        "citation_accuracy": 0.94,
+        "citation_accuracy": 0.96,
         "answer_contains": 0.88,
         "decline_accuracy": 0.3333,
-        "false_declines": 0.04,
+        "false_declines": 0.02,
         "acl_leaks": 0,
         "acl_leak_checks": 295,
         "restricted_probes": 28,
@@ -391,9 +401,11 @@
           {
             "id": "p05",
             "rank": 2,
-            "cited": [],
+            "cited": [
+              "password-and-mfa-standard.md"
+            ],
             "contains": false,
-            "declined": true
+            "declined": false
           },
           {
             "id": "p08",
@@ -494,10 +506,10 @@
         "recall@1": 0.96,
         "recall@4": 1.0,
         "mrr": 0.975,
-        "citation_accuracy": 0.92,
+        "citation_accuracy": 0.94,
         "answer_contains": 0.86,
         "decline_accuracy": 0.3333,
-        "false_declines": 0.04,
+        "false_declines": 0.02,
         "acl_leaks": 0,
         "acl_leak_checks": 295,
         "restricted_probes": 28,
@@ -532,9 +544,11 @@
           {
             "id": "p05",
             "rank": 4,
-            "cited": [],
+            "cited": [
+              "password-and-mfa-standard.md"
+            ],
             "contains": false,
-            "declined": true
+            "declined": false
           },
           {
             "id": "m08",
@@ -641,10 +655,10 @@
           "recall@1": 0.7745,
           "recall@4": 0.9489,
           "mrr": 0.8525,
-          "citation_accuracy": 0.834,
-          "answer_contains": 0.783,
-          "decline_accuracy": 0.6885,
-          "false_declines": 0.0766,
+          "citation_accuracy": 0.8383,
+          "answer_contains": 0.7872,
+          "decline_accuracy": 0.5902,
+          "false_declines": 0.0681,
           "acl_leaks": 0,
           "acl_leak_checks": 1480,
           "restricted_probes": 144,
@@ -654,7 +668,7 @@
               8
             ],
             "kiosk_internal": [
-              10,
+              9,
               10
             ],
             "not_in_library": [
@@ -662,11 +676,11 @@
               13
             ],
             "out_of_scope": [
-              5,
+              4,
               9
             ],
             "restricted_probe": [
-              12,
+              8,
               21
             ]
           },
@@ -792,6 +806,14 @@
               "declined": false
             },
             {
+              "id": "d03",
+              "rank": 0,
+              "cited": [
+                "ofac-screening-procedure.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "d04",
               "rank": 0,
               "cited": [
@@ -854,9 +876,11 @@
             {
               "id": "p17",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "sample-consumer-lending-guidelines.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p18",
@@ -933,9 +957,11 @@
             {
               "id": "p38",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "code-of-conduct.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "p39",
@@ -1410,6 +1436,22 @@
               "declined": false
             },
             {
+              "id": "d21",
+              "rank": 0,
+              "cited": [
+                "address-change-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d22",
+              "rank": 0,
+              "cited": [
+                "ofac-screening-procedure.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "d24",
               "rank": 0,
               "cited": [
@@ -1418,10 +1460,34 @@
               "declined": false
             },
             {
+              "id": "d25",
+              "rank": 0,
+              "cited": [
+                "mobile-deposit.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "d26",
               "rank": 0,
               "cited": [
                 "unusual-activity-referral.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d34",
+              "rank": 0,
+              "cited": [
+                "auto-loan-rate-sheet.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d36",
+              "rank": 0,
+              "cited": [
+                "sample-data-retention-policy.md"
               ],
               "declined": false
             },
@@ -1497,10 +1563,10 @@
           "recall@1": 0.9064,
           "recall@4": 0.9787,
           "mrr": 0.9376,
-          "citation_accuracy": 0.834,
+          "citation_accuracy": 0.8383,
           "answer_contains": 0.7745,
-          "decline_accuracy": 0.6066,
-          "false_declines": 0.0681,
+          "decline_accuracy": 0.5246,
+          "false_declines": 0.0553,
           "acl_leaks": 0,
           "acl_leak_checks": 1480,
           "restricted_probes": 144,
@@ -1510,7 +1576,7 @@
               8
             ],
             "kiosk_internal": [
-              9,
+              8,
               10
             ],
             "not_in_library": [
@@ -1518,11 +1584,11 @@
               13
             ],
             "out_of_scope": [
-              5,
+              4,
               9
             ],
             "restricted_probe": [
-              8,
+              5,
               21
             ]
           },
@@ -1539,9 +1605,11 @@
             {
               "id": "p05",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "password-and-mfa-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "m08",
@@ -1673,9 +1741,11 @@
             {
               "id": "p17",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "sample-consumer-lending-guidelines.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p18",
@@ -1707,9 +1777,11 @@
             {
               "id": "p38",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p39",
@@ -2096,6 +2168,30 @@
               "declined": false
             },
             {
+              "id": "d21",
+              "rank": 0,
+              "cited": [
+                "address-change-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d22",
+              "rank": 0,
+              "cited": [
+                "ofac-screening-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d23",
+              "rank": 0,
+              "cited": [
+                "how-to-become-a-member.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "d24",
               "rank": 0,
               "cited": [
@@ -2124,6 +2220,22 @@
               "rank": 0,
               "cited": [
                 "how-to-become-a-member.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d34",
+              "rank": 0,
+              "cited": [
+                "auto-loan-rate-sheet.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d36",
+              "rank": 0,
+              "cited": [
+                "sample-data-retention-policy.md"
               ],
               "declined": false
             },
@@ -2199,10 +2311,10 @@
           "recall@1": 0.8383,
           "recall@4": 0.983,
           "mrr": 0.9035,
-          "citation_accuracy": 0.8383,
+          "citation_accuracy": 0.8426,
           "answer_contains": 0.7915,
-          "decline_accuracy": 0.6557,
-          "false_declines": 0.0681,
+          "decline_accuracy": 0.5902,
+          "false_declines": 0.0553,
           "acl_leaks": 0,
           "acl_leak_checks": 1480,
           "restricted_probes": 144,
@@ -2212,7 +2324,7 @@
               8
             ],
             "kiosk_internal": [
-              10,
+              9,
               10
             ],
             "not_in_library": [
@@ -2220,11 +2332,11 @@
               13
             ],
             "out_of_scope": [
-              5,
+              4,
               9
             ],
             "restricted_probe": [
-              9,
+              7,
               21
             ]
           },
@@ -2250,9 +2362,11 @@
             {
               "id": "p05",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "password-and-mfa-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p08",
@@ -2375,9 +2489,11 @@
             {
               "id": "p17",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "sample-consumer-lending-guidelines.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p18",
@@ -2436,9 +2552,11 @@
             {
               "id": "p38",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p39",
@@ -2907,6 +3025,22 @@
               "declined": false
             },
             {
+              "id": "d21",
+              "rank": 0,
+              "cited": [
+                "address-change-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d22",
+              "rank": 0,
+              "cited": [
+                "ofac-screening-procedure.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "d24",
               "rank": 0,
               "cited": [
@@ -2927,6 +3061,22 @@
               "rank": 0,
               "cited": [
                 "unusual-activity-referral.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d34",
+              "rank": 0,
+              "cited": [
+                "auto-loan-rate-sheet.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d36",
+              "rank": 0,
+              "cited": [
+                "sample-data-retention-policy.md"
               ],
               "declined": false
             },
@@ -2994,10 +3144,10 @@
           "recall@1": 0.8766,
           "recall@4": 0.9702,
           "mrr": 0.9163,
-          "citation_accuracy": 0.8128,
+          "citation_accuracy": 0.817,
           "answer_contains": 0.7532,
-          "decline_accuracy": 0.6721,
-          "false_declines": 0.0723,
+          "decline_accuracy": 0.6066,
+          "false_declines": 0.0596,
           "acl_leaks": 0,
           "acl_leak_checks": 1480,
           "restricted_probes": 144,
@@ -3007,7 +3157,7 @@
               8
             ],
             "kiosk_internal": [
-              10,
+              9,
               10
             ],
             "not_in_library": [
@@ -3015,11 +3165,11 @@
               13
             ],
             "out_of_scope": [
-              5,
+              4,
               9
             ],
             "restricted_probe": [
-              10,
+              8,
               21
             ]
           },
@@ -3036,9 +3186,11 @@
             {
               "id": "p05",
               "rank": 4,
-              "cited": [],
+              "cited": [
+                "password-and-mfa-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "m08",
@@ -3170,9 +3322,11 @@
             {
               "id": "p17",
               "rank": 3,
-              "cited": [],
+              "cited": [
+                "sample-consumer-lending-guidelines.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p18",
@@ -3204,9 +3358,11 @@
             {
               "id": "p38",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "p39",
@@ -3629,6 +3785,22 @@
               "declined": false
             },
             {
+              "id": "d21",
+              "rank": 0,
+              "cited": [
+                "address-change-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d22",
+              "rank": 0,
+              "cited": [
+                "ofac-screening-procedure.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "d24",
               "rank": 0,
               "cited": [
@@ -3649,6 +3821,22 @@
               "rank": 0,
               "cited": [
                 "unusual-activity-referral.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d34",
+              "rank": 0,
+              "cited": [
+                "auto-loan-rate-sheet.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "d36",
+              "rank": 0,
+              "cited": [
+                "sample-data-retention-policy.md"
               ],
               "declined": false
             },
@@ -3723,10 +3911,10 @@
           "recall@1": 0.5806,
           "recall@4": 0.8226,
           "mrr": 0.6767,
-          "citation_accuracy": 0.5645,
-          "answer_contains": 0.4839,
-          "decline_accuracy": 0.6949,
-          "false_declines": 0.3306,
+          "citation_accuracy": 0.6935,
+          "answer_contains": 0.5968,
+          "decline_accuracy": 0.6102,
+          "false_declines": 0.129,
           "acl_leaks": 0,
           "acl_leak_checks": 915,
           "restricted_probes": 84,
@@ -3740,7 +3928,7 @@
               11
             ],
             "not_in_library": [
-              6,
+              4,
               15
             ],
             "out_of_scope": [
@@ -3748,7 +3936,7 @@
               9
             ],
             "restricted_probe": [
-              9,
+              6,
               15
             ]
           },
@@ -3756,9 +3944,11 @@
             {
               "id": "h001",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "skip-a-pay.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h002",
@@ -3772,20 +3962,15 @@
             {
               "id": "h004",
               "rank": 4,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "sample-travel-expense-policy.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h005",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h006",
-              "rank": 1,
               "cited": [],
               "contains": false,
               "declined": true
@@ -3802,16 +3987,20 @@
             {
               "id": "h009",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "restricted-hr-compensation-bands.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h010",
               "rank": 3,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "restricted-payments-oncall-runbook.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h012",
@@ -3855,23 +4044,20 @@
             {
               "id": "h019",
               "rank": 4,
-              "cited": [],
+              "cited": [
+                "sample-remote-work-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h020",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h021",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h022",
@@ -3928,9 +4114,11 @@
             {
               "id": "h029",
               "rank": 4,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "tuition-reimbursement.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h030",
@@ -3942,16 +4130,20 @@
             {
               "id": "h034",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "change-management-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h035",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "holiday-calendar-2026.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h037",
@@ -4031,20 +4223,6 @@
               "declined": false
             },
             {
-              "id": "h049",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h050",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h051",
               "rank": 1,
               "cited": [],
@@ -4061,20 +4239,6 @@
               "declined": false
             },
             {
-              "id": "h055",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h056",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h058",
               "rank": 2,
               "cited": [
@@ -4086,16 +4250,20 @@
             {
               "id": "h059",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h060",
               "rank": 4,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h061",
@@ -4118,9 +4286,11 @@
             {
               "id": "h064",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "privacy-and-glba-notice-procedure.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h067",
@@ -4148,13 +4318,6 @@
               ],
               "contains": true,
               "declined": false
-            },
-            {
-              "id": "h071",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h075",
@@ -4202,9 +4365,11 @@
             {
               "id": "h091",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "indirect-lending-dealer-standards.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h092",
@@ -4234,9 +4399,11 @@
             {
               "id": "h097",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h101",
@@ -4250,9 +4417,11 @@
             {
               "id": "h104",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "heloc-product-guide.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h105",
@@ -4266,9 +4435,11 @@
             {
               "id": "h106",
               "rank": 4,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "elder-financial-abuse-reporting.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h107",
@@ -4298,9 +4469,11 @@
             {
               "id": "h114",
               "rank": 4,
-              "cited": [],
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h115",
@@ -4319,13 +4492,6 @@
             {
               "id": "h117",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h118",
-              "rank": 1,
               "cited": [],
               "contains": false,
               "declined": true
@@ -4364,6 +4530,30 @@
               "declined": false
             },
             {
+              "id": "h130",
+              "rank": 0,
+              "cited": [
+                "stop-payment-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h131",
+              "rank": 0,
+              "cited": [
+                "address-change-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h132",
+              "rank": 0,
+              "cited": [
+                "indirect-lending-dealer-standards.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h135",
               "rank": 0,
               "cited": [
@@ -4460,6 +4650,14 @@
               "declined": false
             },
             {
+              "id": "h157",
+              "rank": 0,
+              "cited": [
+                "account-opening-checklist.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h160",
               "rank": 0,
               "cited": [
@@ -4480,6 +4678,14 @@
               "rank": 0,
               "cited": [
                 "heloc-product-guide.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h164",
+              "rank": 0,
+              "cited": [
+                "robbery-response-procedure.md"
               ],
               "declined": false
             },
@@ -4507,10 +4713,10 @@
           "recall@1": 0.7742,
           "recall@4": 0.9355,
           "mrr": 0.8448,
-          "citation_accuracy": 0.5806,
-          "answer_contains": 0.4919,
-          "decline_accuracy": 0.678,
-          "false_declines": 0.2823,
+          "citation_accuracy": 0.75,
+          "answer_contains": 0.6371,
+          "decline_accuracy": 0.5593,
+          "false_declines": 0.0484,
           "acl_leaks": 0,
           "acl_leak_checks": 915,
           "restricted_probes": 84,
@@ -4520,11 +4726,11 @@
               9
             ],
             "kiosk_internal": [
-              9,
+              7,
               11
             ],
             "not_in_library": [
-              6,
+              4,
               15
             ],
             "out_of_scope": [
@@ -4532,7 +4738,7 @@
               9
             ],
             "restricted_probe": [
-              8,
+              5,
               15
             ]
           },
@@ -4540,9 +4746,11 @@
             {
               "id": "h001",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "skip-a-pay.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h002",
@@ -4552,20 +4760,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h004",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h006",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h008",
@@ -4579,16 +4773,11 @@
             {
               "id": "h009",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "restricted-hr-compensation-bands.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h010",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h012",
@@ -4607,39 +4796,22 @@
               "declined": true
             },
             {
-              "id": "h016",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h018",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h019",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "sample-remote-work-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h020",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h021",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h023",
@@ -4662,9 +4834,11 @@
             {
               "id": "h026",
               "rank": 4,
-              "cited": [],
+              "cited": [
+                "password-and-mfa-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h027",
@@ -4676,13 +4850,6 @@
               "declined": false
             },
             {
-              "id": "h029",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h030",
               "rank": 3,
               "cited": [],
@@ -4692,23 +4859,20 @@
             {
               "id": "h034",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "change-management-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h035",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h037",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h039",
@@ -4781,27 +4945,6 @@
               "declined": false
             },
             {
-              "id": "h049",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h050",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h051",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h054",
               "rank": 1,
               "cited": [
@@ -4811,18 +4954,13 @@
               "declined": false
             },
             {
-              "id": "h055",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h056",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "unusual-activity-referral.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h058",
@@ -4836,16 +4974,20 @@
             {
               "id": "h059",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h060",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h063",
@@ -4855,13 +4997,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h064",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h067",
@@ -4889,13 +5024,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h071",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h075",
@@ -4934,13 +5062,6 @@
               "declined": false
             },
             {
-              "id": "h091",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h092",
               "rank": 2,
               "cited": [
@@ -4952,9 +5073,11 @@
             {
               "id": "h097",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h105",
@@ -4964,13 +5087,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h106",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h109",
@@ -5007,9 +5123,11 @@
             {
               "id": "h116",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h117",
@@ -5019,13 +5137,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h118",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h119",
@@ -5052,10 +5163,34 @@
               "declined": false
             },
             {
+              "id": "h130",
+              "rank": 0,
+              "cited": [
+                "stop-payment-procedure.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h131",
               "rank": 0,
               "cited": [
                 "auto-loan-rate-sheet.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h132",
+              "rank": 0,
+              "cited": [
+                "indirect-lending-dealer-standards.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h133",
+              "rank": 0,
+              "cited": [
+                "phishing-and-incident-reporting.md"
               ],
               "declined": false
             },
@@ -5100,6 +5235,14 @@
               "declined": false
             },
             {
+              "id": "h142",
+              "rank": 0,
+              "cited": [
+                "mobile-deposit.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h143",
               "rank": 0,
               "cited": [
@@ -5112,6 +5255,14 @@
               "rank": 0,
               "cited": [
                 "skip-a-pay.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h150",
+              "rank": 0,
+              "cited": [
+                "fee-schedule.md"
               ],
               "declined": false
             },
@@ -5156,6 +5307,14 @@
               "declined": false
             },
             {
+              "id": "h157",
+              "rank": 0,
+              "cited": [
+                "hurricane-preparedness.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h160",
               "rank": 0,
               "cited": [
@@ -5176,6 +5335,14 @@
               "rank": 0,
               "cited": [
                 "heloc-product-guide.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h164",
+              "rank": 0,
+              "cited": [
+                "mortgage-referral-process.md"
               ],
               "declined": false
             },
@@ -5203,10 +5370,10 @@
           "recall@1": 0.7258,
           "recall@4": 0.9113,
           "mrr": 0.8017,
-          "citation_accuracy": 0.5645,
-          "answer_contains": 0.4839,
-          "decline_accuracy": 0.6949,
-          "false_declines": 0.2903,
+          "citation_accuracy": 0.7177,
+          "answer_contains": 0.6129,
+          "decline_accuracy": 0.5932,
+          "false_declines": 0.0806,
           "acl_leaks": 0,
           "acl_leak_checks": 915,
           "restricted_probes": 84,
@@ -5220,7 +5387,7 @@
               11
             ],
             "not_in_library": [
-              6,
+              4,
               15
             ],
             "out_of_scope": [
@@ -5228,7 +5395,7 @@
               9
             ],
             "restricted_probe": [
-              9,
+              5,
               15
             ]
           },
@@ -5236,9 +5403,11 @@
             {
               "id": "h001",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "skip-a-pay.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h002",
@@ -5264,13 +5433,6 @@
               "declined": true
             },
             {
-              "id": "h006",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h008",
               "rank": 3,
               "cited": [
@@ -5282,16 +5444,11 @@
             {
               "id": "h009",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "restricted-hr-compensation-bands.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h010",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h012",
@@ -5310,39 +5467,22 @@
               "declined": true
             },
             {
-              "id": "h016",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h018",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h019",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "sample-remote-work-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h020",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h021",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h023",
@@ -5365,9 +5505,11 @@
             {
               "id": "h026",
               "rank": 4,
-              "cited": [],
+              "cited": [
+                "password-and-mfa-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h027",
@@ -5379,13 +5521,6 @@
               "declined": false
             },
             {
-              "id": "h029",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h030",
               "rank": 3,
               "cited": [],
@@ -5395,16 +5530,20 @@
             {
               "id": "h034",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "change-management-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h035",
               "rank": 3,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "business-continuity-plan-summary.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h037",
@@ -5475,20 +5614,6 @@
               "declined": false
             },
             {
-              "id": "h049",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h050",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h051",
               "rank": 1,
               "cited": [],
@@ -5505,20 +5630,6 @@
               "declined": false
             },
             {
-              "id": "h055",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h056",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h058",
               "rank": 2,
               "cited": [
@@ -5530,16 +5641,20 @@
             {
               "id": "h059",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h060",
               "rank": 3,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h063",
@@ -5553,9 +5668,11 @@
             {
               "id": "h064",
               "rank": 4,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "overdraft-courtesy-pay.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h067",
@@ -5583,13 +5700,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h071",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h075",
@@ -5648,9 +5758,11 @@
             {
               "id": "h091",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "unusual-activity-referral.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h092",
@@ -5673,9 +5785,11 @@
             {
               "id": "h097",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h101",
@@ -5707,9 +5821,11 @@
             {
               "id": "h106",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "elder-financial-abuse-reporting.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h109",
@@ -5746,9 +5862,11 @@
             {
               "id": "h116",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h117",
@@ -5758,13 +5876,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h118",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h119",
@@ -5796,6 +5907,38 @@
               "rank": 0,
               "cited": [
                 "benefits-overview.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h130",
+              "rank": 0,
+              "cited": [
+                "stop-payment-procedure.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h131",
+              "rank": 0,
+              "cited": [
+                "benefits-overview.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h132",
+              "rank": 0,
+              "cited": [
+                "indirect-lending-dealer-standards.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h133",
+              "rank": 0,
+              "cited": [
+                "phishing-and-incident-reporting.md"
               ],
               "declined": false
             },
@@ -5896,6 +6039,14 @@
               "declined": false
             },
             {
+              "id": "h157",
+              "rank": 0,
+              "cited": [
+                "account-opening-checklist.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h160",
               "rank": 0,
               "cited": [
@@ -5916,6 +6067,14 @@
               "rank": 0,
               "cited": [
                 "heloc-product-guide.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h164",
+              "rank": 0,
+              "cited": [
+                "mortgage-referral-process.md"
               ],
               "declined": false
             },
@@ -5943,10 +6102,10 @@
           "recall@1": 0.7339,
           "recall@4": 0.8952,
           "mrr": 0.8038,
-          "citation_accuracy": 0.5645,
-          "answer_contains": 0.4758,
-          "decline_accuracy": 0.678,
-          "false_declines": 0.2903,
+          "citation_accuracy": 0.7016,
+          "answer_contains": 0.5968,
+          "decline_accuracy": 0.5932,
+          "false_declines": 0.0887,
           "acl_leaks": 0,
           "acl_leak_checks": 915,
           "restricted_probes": 84,
@@ -5960,7 +6119,7 @@
               11
             ],
             "not_in_library": [
-              6,
+              4,
               15
             ],
             "out_of_scope": [
@@ -5968,7 +6127,7 @@
               9
             ],
             "restricted_probe": [
-              8,
+              5,
               15
             ]
           },
@@ -5976,9 +6135,11 @@
             {
               "id": "h001",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "skip-a-pay.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h002",
@@ -6004,13 +6165,6 @@
               "declined": true
             },
             {
-              "id": "h006",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h008",
               "rank": 0,
               "cited": [
@@ -6022,16 +6176,11 @@
             {
               "id": "h009",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "restricted-hr-compensation-bands.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h010",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h012",
@@ -6059,39 +6208,22 @@
               "declined": true
             },
             {
-              "id": "h016",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h018",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h019",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "sample-remote-work-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h020",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h021",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h023",
@@ -6128,13 +6260,6 @@
               "declined": false
             },
             {
-              "id": "h029",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h030",
               "rank": 2,
               "cited": [],
@@ -6144,16 +6269,20 @@
             {
               "id": "h034",
               "rank": 1,
-              "cited": [],
+              "cited": [
+                "change-management-policy.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h035",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h037",
@@ -6233,20 +6362,6 @@
               "declined": false
             },
             {
-              "id": "h049",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
-              "id": "h050",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h051",
               "rank": 1,
               "cited": [],
@@ -6263,18 +6378,13 @@
               "declined": false
             },
             {
-              "id": "h055",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h056",
               "rank": 3,
-              "cited": [],
+              "cited": [
+                "unusual-activity-referral.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h058",
@@ -6288,16 +6398,20 @@
             {
               "id": "h059",
               "rank": 2,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h060",
               "rank": 2,
-              "cited": [],
-              "contains": false,
-              "declined": true
+              "cited": [
+                "sample-member-identity-verification.md"
+              ],
+              "contains": true,
+              "declined": false
             },
             {
               "id": "h063",
@@ -6307,13 +6421,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h064",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h067",
@@ -6341,13 +6448,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h071",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h075",
@@ -6386,13 +6486,6 @@
               "declined": false
             },
             {
-              "id": "h091",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
-            },
-            {
               "id": "h092",
               "rank": 2,
               "cited": [
@@ -6404,9 +6497,11 @@
             {
               "id": "h097",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "cash-handling-limits.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h105",
@@ -6416,13 +6511,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h106",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h109",
@@ -6468,9 +6556,11 @@
             {
               "id": "h116",
               "rank": 0,
-              "cited": [],
+              "cited": [
+                "lobby-kiosk-standard.md"
+              ],
               "contains": false,
-              "declined": true
+              "declined": false
             },
             {
               "id": "h117",
@@ -6480,13 +6570,6 @@
               ],
               "contains": false,
               "declined": false
-            },
-            {
-              "id": "h118",
-              "rank": 1,
-              "cited": [],
-              "contains": false,
-              "declined": true
             },
             {
               "id": "h119",
@@ -6513,10 +6596,34 @@
               "declined": false
             },
             {
+              "id": "h130",
+              "rank": 0,
+              "cited": [
+                "stop-payment-procedure.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h131",
               "rank": 0,
               "cited": [
                 "auto-loan-rate-sheet.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h132",
+              "rank": 0,
+              "cited": [
+                "indirect-lending-dealer-standards.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h133",
+              "rank": 0,
+              "cited": [
+                "phishing-and-incident-reporting.md"
               ],
               "declined": false
             },
@@ -6617,6 +6724,14 @@
               "declined": false
             },
             {
+              "id": "h157",
+              "rank": 0,
+              "cited": [
+                "hurricane-preparedness.md"
+              ],
+              "declined": false
+            },
+            {
               "id": "h160",
               "rank": 0,
               "cited": [
@@ -6637,6 +6752,14 @@
               "rank": 0,
               "cited": [
                 "heloc-product-guide.md"
+              ],
+              "declined": false
+            },
+            {
+              "id": "h164",
+              "rank": 0,
+              "cited": [
+                "mortgage-referral-process.md"
               ],
               "declined": false
             },
@@ -6662,7 +6785,7 @@
     }
   },
   "thresholds": {
-    "_comment": "Regression gates for scripts/rag_eval.py --check (k=4, demo embedder and extractive answerer, Cypress Harbor sample library). configs: the gated set (evals/golden/questions.jsonl); development: the gated set plus evals/golden/questions_dev.jsonl; heldout: evals/heldout/questions.jsonl. Each minimum is one point below the value measured after the answerer's citation and decline change, rounded down; a gated-set minimum that was already higher (set when that set was introduced) is kept. Raise them when retrieval or answering improves; never lower them to make a change pass. ACL leaks are a hard gate at 0 over every question.",
+    "_comment": "Regression gates for scripts/rag_eval.py --check (k=4, demo embedder and extractive answerer, Cypress Harbor sample library). configs: the gated set (evals/golden/questions.jsonl); development: the gated set plus evals/golden/questions_dev.jsonl; heldout: evals/heldout/questions.jsonl. Each minimum is one point below the value measured after the answerer's citation and decline change (decline rule: at least 2 covered content words), rounded down; a gated-set minimum that was already higher (set when that set was introduced) is kept. Raise them when retrieval or answering improves; never lower them to make a change pass. Exception, recorded in evals/README.md: the decline minimums (and the gated vector+none decline minimum) were lowered once, on purpose, when the stricter coverage rule was dropped because it declined 29% of answerable held-out questions. ACL leaks are a hard gate at 0 over every question.",
     "max_acl_leaks": 0,
     "configs": {
       "vector+none": {
@@ -6671,7 +6794,7 @@
         "mrr": 0.86,
         "citation_accuracy": 0.93,
         "answer_contains": 0.87,
-        "decline_accuracy": 0.43
+        "decline_accuracy": 0.32
       },
       "bm25+none": {
         "recall@1": 0.99,
@@ -6706,7 +6829,7 @@
           "mrr": 0.84,
           "citation_accuracy": 0.82,
           "answer_contains": 0.77,
-          "decline_accuracy": 0.67
+          "decline_accuracy": 0.58
         },
         "bm25+none": {
           "recall@1": 0.89,
@@ -6714,15 +6837,15 @@
           "mrr": 0.92,
           "citation_accuracy": 0.82,
           "answer_contains": 0.76,
-          "decline_accuracy": 0.59
+          "decline_accuracy": 0.51
         },
         "hybrid+none": {
           "recall@1": 0.82,
           "recall@4": 0.97,
           "mrr": 0.89,
-          "citation_accuracy": 0.82,
+          "citation_accuracy": 0.83,
           "answer_contains": 0.78,
-          "decline_accuracy": 0.64
+          "decline_accuracy": 0.58
         },
         "hybrid+lexical": {
           "recall@1": 0.86,
@@ -6730,7 +6853,7 @@
           "mrr": 0.9,
           "citation_accuracy": 0.8,
           "answer_contains": 0.74,
-          "decline_accuracy": 0.66
+          "decline_accuracy": 0.59
         }
       }
     },
@@ -6740,33 +6863,33 @@
           "recall@1": 0.57,
           "recall@4": 0.81,
           "mrr": 0.66,
-          "citation_accuracy": 0.55,
-          "answer_contains": 0.47,
-          "decline_accuracy": 0.68
+          "citation_accuracy": 0.68,
+          "answer_contains": 0.58,
+          "decline_accuracy": 0.6
         },
         "bm25+none": {
           "recall@1": 0.76,
           "recall@4": 0.92,
           "mrr": 0.83,
-          "citation_accuracy": 0.57,
-          "answer_contains": 0.48,
-          "decline_accuracy": 0.66
+          "citation_accuracy": 0.74,
+          "answer_contains": 0.62,
+          "decline_accuracy": 0.54
         },
         "hybrid+none": {
           "recall@1": 0.71,
           "recall@4": 0.9,
           "mrr": 0.79,
-          "citation_accuracy": 0.55,
-          "answer_contains": 0.47,
-          "decline_accuracy": 0.68
+          "citation_accuracy": 0.7,
+          "answer_contains": 0.6,
+          "decline_accuracy": 0.58
         },
         "hybrid+lexical": {
           "recall@1": 0.72,
           "recall@4": 0.88,
           "mrr": 0.79,
-          "citation_accuracy": 0.55,
-          "answer_contains": 0.46,
-          "decline_accuracy": 0.66
+          "citation_accuracy": 0.69,
+          "answer_contains": 0.58,
+          "decline_accuracy": 0.58
         }
       }
     }

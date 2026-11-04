@@ -104,8 +104,7 @@ runs per collection before any passage is scored; passages are then ranked toget
 quotes and cites only one document: the retrieved document that contains the most of the question's words. A
 question that nothing in the library answers well receives "I couldn't find that in the documents you can
 access" instead of an unrelated quote: in demo mode when the best passage's vector similarity is below a floor,
-or when no retrieved document contains at least two of the question's content words and more than a third of
-them. The eval goes through the same path and reports how often it declines when it should, and how often it
+or when no retrieved document contains at least two of the question's content words. The eval goes through the same path and reports how often it declines when it should, and how often it
 declines a question it could have answered ([evals/README.md](../evals/README.md)).
 
 ## Navigation

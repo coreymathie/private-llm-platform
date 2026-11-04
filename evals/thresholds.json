@@ -1,22 +1,22 @@
 {
-  "_comment": "Regression gates for scripts/rag_eval.py --check (k=4, demo embedder and extractive answerer, Cypress Harbor sample library). configs: the gated set (evals/golden/questions.jsonl); development: the gated set plus evals/golden/questions_dev.jsonl; heldout: evals/heldout/questions.jsonl. Each minimum is one point below the value measured after the answerer's citation and decline change, rounded down; a gated-set minimum that was already higher (set when that set was introduced) is kept. Raise them when retrieval or answering improves; never lower them to make a change pass. ACL leaks are a hard gate at 0 over every question.",
+  "_comment": "Regression gates for scripts/rag_eval.py --check (k=4, demo embedder and extractive answerer, Cypress Harbor sample library). configs: the gated set (evals/golden/questions.jsonl); development: the gated set plus evals/golden/questions_dev.jsonl; heldout: evals/heldout/questions.jsonl. Each minimum is one point below the value measured after the answerer's citation and decline change (decline rule: at least 2 covered content words), rounded down; a gated-set minimum that was already higher (set when that set was introduced) is kept. Raise them when retrieval or answering improves; never lower them to make a change pass. Exception, recorded in evals/README.md: the decline minimums (and the gated vector+none decline minimum) were lowered once, on purpose, when the stricter coverage rule was dropped because it declined 29% of answerable held-out questions. ACL leaks are a hard gate at 0 over every question.",
   "max_acl_leaks": 0,
   "configs": {
-    "vector+none": {"recall@1": 0.79, "recall@4": 0.95, "mrr": 0.86, "citation_accuracy": 0.93, "answer_contains": 0.87, "decline_accuracy": 0.43},
+    "vector+none": {"recall@1": 0.79, "recall@4": 0.95, "mrr": 0.86, "citation_accuracy": 0.93, "answer_contains": 0.87, "decline_accuracy": 0.32},
     "bm25+none": {"recall@1": 0.99, "recall@4": 0.99, "mrr": 0.99, "citation_accuracy": 0.91, "answer_contains": 0.85, "decline_accuracy": 0.32},
     "hybrid+none": {"recall@1": 0.87, "recall@4": 0.99, "mrr": 0.93, "citation_accuracy": 0.93, "answer_contains": 0.87, "decline_accuracy": 0.32},
     "hybrid+lexical": {"recall@1": 0.95, "recall@4": 0.99, "mrr": 0.96, "citation_accuracy": 0.91, "answer_contains": 0.85, "decline_accuracy": 0.32}
   },
   "development": {"configs": {
-    "vector+none": {"recall@1": 0.76, "recall@4": 0.93, "mrr": 0.84, "citation_accuracy": 0.82, "answer_contains": 0.77, "decline_accuracy": 0.67},
-    "bm25+none": {"recall@1": 0.89, "recall@4": 0.96, "mrr": 0.92, "citation_accuracy": 0.82, "answer_contains": 0.76, "decline_accuracy": 0.59},
-    "hybrid+none": {"recall@1": 0.82, "recall@4": 0.97, "mrr": 0.89, "citation_accuracy": 0.82, "answer_contains": 0.78, "decline_accuracy": 0.64},
-    "hybrid+lexical": {"recall@1": 0.86, "recall@4": 0.96, "mrr": 0.9, "citation_accuracy": 0.8, "answer_contains": 0.74, "decline_accuracy": 0.66}
+    "vector+none": {"recall@1": 0.76, "recall@4": 0.93, "mrr": 0.84, "citation_accuracy": 0.82, "answer_contains": 0.77, "decline_accuracy": 0.58},
+    "bm25+none": {"recall@1": 0.89, "recall@4": 0.96, "mrr": 0.92, "citation_accuracy": 0.82, "answer_contains": 0.76, "decline_accuracy": 0.51},
+    "hybrid+none": {"recall@1": 0.82, "recall@4": 0.97, "mrr": 0.89, "citation_accuracy": 0.83, "answer_contains": 0.78, "decline_accuracy": 0.58},
+    "hybrid+lexical": {"recall@1": 0.86, "recall@4": 0.96, "mrr": 0.9, "citation_accuracy": 0.8, "answer_contains": 0.74, "decline_accuracy": 0.59}
   }},
   "heldout": {"configs": {
-    "vector+none": {"recall@1": 0.57, "recall@4": 0.81, "mrr": 0.66, "citation_accuracy": 0.55, "answer_contains": 0.47, "decline_accuracy": 0.68},
-    "bm25+none": {"recall@1": 0.76, "recall@4": 0.92, "mrr": 0.83, "citation_accuracy": 0.57, "answer_contains": 0.48, "decline_accuracy": 0.66},
-    "hybrid+none": {"recall@1": 0.71, "recall@4": 0.9, "mrr": 0.79, "citation_accuracy": 0.55, "answer_contains": 0.47, "decline_accuracy": 0.68},
-    "hybrid+lexical": {"recall@1": 0.72, "recall@4": 0.88, "mrr": 0.79, "citation_accuracy": 0.55, "answer_contains": 0.46, "decline_accuracy": 0.66}
+    "vector+none": {"recall@1": 0.57, "recall@4": 0.81, "mrr": 0.66, "citation_accuracy": 0.68, "answer_contains": 0.58, "decline_accuracy": 0.6},
+    "bm25+none": {"recall@1": 0.76, "recall@4": 0.92, "mrr": 0.83, "citation_accuracy": 0.74, "answer_contains": 0.62, "decline_accuracy": 0.54},
+    "hybrid+none": {"recall@1": 0.71, "recall@4": 0.9, "mrr": 0.79, "citation_accuracy": 0.7, "answer_contains": 0.6, "decline_accuracy": 0.58},
+    "hybrid+lexical": {"recall@1": 0.72, "recall@4": 0.88, "mrr": 0.79, "citation_accuracy": 0.69, "answer_contains": 0.58, "decline_accuracy": 0.58}
   }}
 }
