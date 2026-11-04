@@ -4,8 +4,8 @@
 
 This release reframes the console around the institution that would deploy the platform. The console is set in
 a fictional credit union and opens on an employee assistant, in the pattern of an internal Copilot-style tool,
-with a 59-document library behind it. Evidence: 251 tests, an answer-quality eval over the sample library itself
-(59 questions asked as five personas, no ACL leaks, hybrid citation accuracy 0.920), and a 42-check browser
+with a 59-document library behind it. Evidence: 253 tests, an answer-quality eval over the sample library itself
+(59 questions asked as five personas, no ACL leaks, hybrid citation accuracy 0.920), and a 46-check browser
 smoke test across both console modes.
 
 ### Highlights
@@ -73,7 +73,13 @@ smoke test across both console modes.
 - Documents: titles, owners and review dates, a filter, and a plain-language access matrix. Audit log: paging
   and a "Log intact" summary. Access policy: an "in effect now" summary above the JSON. Answer quality: labelled
   as measured on the sample library.
-- Screens that need no engine (Ask, Usage and impact) render before Pyodide finishes.
+- Screens that need no engine (Ask, Usage and impact) render before Pyodide finishes. While it loads, the
+  assistant shows its start-up steps (loading the Python runtime, the gateway's code and the sample library,
+  then indexing) and says that the first load downloads the runtime (about 34 MB before compression, measured by
+  the smoke test); names come from a static list, suggested questions stay hidden behind a neutral placeholder
+  and the composer reads "Getting ready…" until the engine is ready.
+- Figures (KPI tiles, tables of numbers, charts, meters and numbers inside sentences) carry `translate="no"`, so
+  browser page translation no longer rewrites "$1,100" as "1 100 USD"; labels and prose stay translatable.
 - People are named for the setting and its departments (Priya Shah, Human resources; Dana Ortiz, IT and digital
   banking; Marcus Bell, Compliance and BSA; Audrey Kim, Internal audit; the branch lobby kiosk).
 - The original documents lose the "(fictional sample)" title suffix; the workspace is labelled instead.
@@ -126,6 +132,9 @@ smoke test across both console modes.
   point below each measured value.
 
 ### Fixed
+- The assistant showed "Good morning, priya" and the generic staff questions while Pyodide loaded, before the
+  personas and their own questions were available.
+- *Load sample data* in live mode described the library as 13 policies; it loads the full catalog.
 - Feedback buttons toggled twice per click after the chat re-rendered (stacked click listeners).
 - An answer to a question sent while the chat re-rendered was painted into the old page and never shown.
 

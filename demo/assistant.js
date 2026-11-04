@@ -35,6 +35,16 @@ const suggestionsFor = (S, id) => {
   return { sugg: all.personas[id] || all.default, popular: all.popular_for[id] || all.popular };
 };
 const PEOPLE = new Set(["priya", "dana", "marcus", "audrey", "kiosk"]);
+// Display names before the engine has loaded its personas (demo/engine.py PERSONAS; tests/test_console.py keeps the
+// two in step), so the start-up screen never shows a raw persona id.
+const BOOT_NAMES = {
+  admin: "Admin",
+  priya: "Priya Shah (Human resources)",
+  dana: "Dana Ortiz (IT and digital banking)",
+  marcus: "Marcus Bell (Compliance and BSA)",
+  kiosk: "Branch lobby kiosk",
+  audrey: "Audrey Kim (Internal audit)",
+};
 
 const firstName = (name) => String(name || "").split(/[\s(]/)[0];
 const initials = (name) => String(name || "?").replace(/\(.*\)/, "").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
@@ -49,7 +59,20 @@ function personaList(S) {
   const list = S.personas.filter((p) => tech() || PEOPLE.has(p.id) || S.A.mode === "live");
   return list.length ? list : S.personas;
 }
-const personaOf = (S, id) => S.personas.find((p) => p.id === id) || { id, name: id, note: "" };
+const personaOf = (S, id) => S.personas.find((p) => p.id === id)
+  || { id, name: (S.A?.mode === "demo" && BOOT_NAMES[id]) || (S.ready ? id : ""), note: "" };
+
+// ---------- start-up state (app.js fills S.boot from the adapter's steps and progress) ----------
+
+export function bootStepsHtml(S) {
+  return (S.boot?.steps || []).map((s) => `<li class="${esc(s.state)}">${esc(s.label)}${s.state === "done" ? '<span class="sr-only"> (done)</span>' : s.state === "active" ? '<span class="sr-only"> (in progress)</span>' : ""}</li>`).join("");
+}
+export function bootPanel(S) {
+  return `<div class="boot-panel" role="status" aria-live="polite" aria-label="Starting the assistant">
+    <ol class="boot-steps" data-boot-steps>${bootStepsHtml(S)}</ol>
+    <p class="muted small boot-note">${esc(S.boot?.note || "")}</p></div>`;
+}
+const skeleton = (n) => Array.from({ length: n }, () => '<div class="sugg skeleton" aria-hidden="true"><span class="sk-line"></span><span class="sk-line short"></span></div>').join("");
 
 // ---------- answers ----------
 
@@ -169,11 +192,11 @@ export async function chat(view, S) {
       <div class="hist-label">Today</div>
       <ul class="hist-list">${c.sessions.filter((s) => s.thread.length || s.id === c.current).map((s) => `<li><button type="button" data-session="${s.id}" ${s.id === c.current ? 'aria-current="true"' : ""}>${esc(s.title)}</button></li>`).join("")}</ul>
       <div class="hist-label">Popular this week</div>
-      <ul class="hist-list popular">${suggestionsFor(S, c.persona).popular.map(({ q }) => `<li><button type="button" data-q="${esc(q)}">${esc(q)}</button></li>`).join("")}</ul>
+      <ul class="hist-list popular">${ready ? suggestionsFor(S, c.persona).popular.map(({ q }) => `<li><button type="button" data-q="${esc(q)}">${esc(q)}</button></li>`).join("") : '<li class="sk-item" aria-hidden="true"><span class="sk-line"></span></li>'.repeat(4)}</ul>
     </aside>
     <section class="convo" aria-label="Assistant">
       <div class="convo-head">
-        <label class="asking"><span class="avatar" aria-hidden="true">${esc(initials(me.name))}</span><span class="asking-text"><small>Asking as</small><select id="persona" aria-label="Ask as" ${ready ? "" : "disabled"}>${(ready ? personaList(S) : [{ id: "", name: "Starting…" }]).map((p) => `<option value="${esc(p.id)}" ${p.id === c.persona ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></span></label>
+        <label class="asking"><span class="avatar" aria-hidden="true">${me.name ? esc(initials(me.name)) : ""}</span><span class="asking-text"><small>Asking as</small><select id="persona" aria-label="Ask as" ${ready ? "" : "disabled"}>${(ready ? personaList(S) : [{ id: c.persona, name: me.name || "Getting ready…" }]).map((p) => `<option value="${esc(p.id)}" ${p.id === c.persona ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select></span></label>
         <label class="scope"><small>Search in</small><select id="collection" aria-label="Search in" ${ready ? "" : "disabled"}><option value="*">All sources I can read</option>${colNames.map((n) => `<option value="${esc(n)}" ${n === c.collection ? "selected" : ""}>${esc(collectionLabel(n))}</option>`).join("")}</select></label>
         <label class="check compare-toggle"><input type="checkbox" id="compare" ${c.compare ? "checked" : ""} ${ready ? "" : "disabled"}/> Compare with</label>
         <select id="persona2" aria-label="Second person" ${c.compare ? "" : "hidden"}>${personaList(S).map((p) => `<option value="${esc(p.id)}" ${p.id === c.persona2 ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>
@@ -190,7 +213,7 @@ export async function chat(view, S) {
       <div class="thread" id="thread" aria-live="polite"></div>
       <form class="composer" id="composer">
         <label class="sr-only" for="prompt">Ask a question</label>
-        <textarea id="prompt" rows="1" placeholder="${ready ? "Ask about a policy, procedure or product…" : "The assistant is starting…"}" ${ready ? "" : "disabled"}>${esc(c.draft || "")}</textarea>
+        <textarea id="prompt" rows="1" placeholder="${ready ? "Ask about a policy, procedure or product…" : "Getting ready…"}" ${ready ? "" : "disabled"}>${esc(c.draft || "")}</textarea>
         <button class="primary send" id="send" type="submit" aria-label="Send" ${ready ? "" : "disabled"}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </form>
       <p class="composer-note" id="composerNote"></p>
@@ -205,12 +228,12 @@ export async function chat(view, S) {
     const t = sess.thread;
     if (!t.length) {
       const { sugg } = suggestionsFor(S, c.persona);
-      const name = PEOPLE.has(c.persona) && c.persona !== "kiosk" ? `, ${esc(firstName(me.name))}` : "";
+      const name = PEOPLE.has(c.persona) && c.persona !== "kiosk" && me.name ? `, ${esc(firstName(me.name))}` : "";
       thread.innerHTML = `<div class="hero">
         <div class="hero-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <h1>${greeting()}${name}</h1>
-        <p class="hero-sub">${ready ? `Ask about Cypress Harbor's policies, procedures and products. Answers cite the documents ${c.persona === "kiosk" ? "this kiosk" : "you"} can read${S.whoCount ? `: ${S.whoCount} of ${catalog().documents.length}` : ""}.` : "Getting the assistant ready. It runs entirely inside the credit union's network."}</p>
-        <div class="sugg-grid">${sugg.map(({ q, note }) => `<button type="button" class="sugg${note ? " expect-refusal" : ""}" data-q="${esc(q)}" ${ready ? "" : "disabled"}><span>${esc(q)}${note ? `<small class="sugg-note">${esc(note)}</small>` : ""}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>`).join("")}</div>
+        ${ready ? `<p class="hero-sub">Ask about Cypress Harbor's policies, procedures and products. Answers cite the documents ${c.persona === "kiosk" ? "this kiosk" : "you"} can read${S.whoCount ? `: ${S.whoCount} of ${catalog().documents.length}` : ""}.</p>` : `<p class="hero-sub">Getting the assistant ready.</p>${bootPanel(S)}`}
+        <div class="sugg-grid">${ready ? sugg.map(({ q, note }) => `<button type="button" class="sugg${note ? " expect-refusal" : ""}" data-q="${esc(q)}"><span>${esc(q)}${note ? `<small class="sugg-note">${esc(note)}</small>` : ""}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>`).join("") : skeleton(4)}</div>
       </div>`;
     } else {
       thread.innerHTML = t.map((m, i) => m.role === "user"
@@ -222,7 +245,9 @@ export async function chat(view, S) {
             ${m.live == null ? actionsRow(i, m) : ""}</div></div>`).join("");
     }
     thread.scrollTop = thread.scrollHeight;
-    $("#composerNote", view).innerHTML = c.kind === "model"
+    $("#composerNote", view).innerHTML = !S.ready
+      ? "Getting ready… You can ask a question once the assistant has started."
+      : c.kind === "model"
       ? "Model-only chat: no documents and no citations. For policy questions, answer from documents."
       : `Answers come only from documents ${c.persona === "kiosk" ? "the kiosk" : (PEOPLE.has(c.persona) && esc(firstName(me.name))) || "you"} may read, with citations. Check the source before acting on anything that affects a member's money.${A.mode === "demo" ? '<span class="tech-only"> Demo answerer: extractive (best-matching sentences), no LLM in the browser.</span>' : ""}`;
     paintPane();

@@ -42,6 +42,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 CDN = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
 SCREENS = [
     "overview",
@@ -130,32 +132,95 @@ def mobile_pass(run: Run, page, prefix: str) -> None:
 # ------------------------------------------------------------------------------------------------
 
 
+def route_pyodide(target, pyodide_dir: Path | None, served: dict[str, int]) -> None:
+    """Answer requests for the Pyodide CDN from a local release folder, recording each file's size."""
+    if not pyodide_dir:
+        return
+    local = pyodide_dir.resolve()
+
+    def fulfill(route):
+        name = route.request.url.split(CDN, 1)[1].split("?", 1)[0]
+        f = local / name
+        if f.is_file():
+            served[name] = f.stat().st_size
+            ctype = "application/wasm" if name.endswith(".wasm") else None
+            route.fulfill(path=str(f), content_type=ctype, headers={"Access-Control-Allow-Origin": "*"})
+        else:
+            route.fulfill(status=404, body=f"not in local pyodide dir: {name}")
+
+    target.route(f"{CDN}**", fulfill)
+
+
+PERSONA_IDS = re.compile(r"\b(priya|dana|marcus|audrey)\b")  # what personaOf() used to show before personas loaded
+
+
+def boot_state(run: Run, page, started: float) -> str:
+    """While Pyodide loads: a visible loading state, no raw persona ids, no placeholder questions, composer off."""
+    from playwright.sync_api import expect
+
+    page.wait_for_selector('#view > [data-screen="chat"][data-loaded="true"]', timeout=30_000)
+    note = ""
+    for at in (0.5, 3.0):
+        page.wait_for_timeout(max(0, int((started + at - time.time()) * 1000)))
+        assert not page.evaluate("document.body.dataset.ready"), f"engine ready before {at} s: start-up not observable"
+        run.shot(page, f"demo-boot-{at:g}s", full=False)
+        steps = page.locator(".hero .boot-steps li")
+        expect(steps).to_have_count(4)
+        expect(steps.first).to_contain_text("Loading the Python runtime")
+        expect(steps.nth(2)).to_contain_text("Loading the sample library (59 documents)")
+        assert page.locator(".hero .boot-steps li.active, .hero .boot-steps li.done").count() >= 1
+        expect(page.locator(".hero .boot-note")).to_contain_text("downloads the Python runtime")
+        note = page.inner_text(".hero .boot-note")
+        expect(page.locator("#footMode")).to_contain_text("Starting")
+        text = page.inner_text("#view") + " " + page.inner_text("#footMode")
+        assert not PERSONA_IDS.search(text), PERSONA_IDS.search(text)
+        expect(page.locator(".hero h1")).to_contain_text("Priya")
+        assert page.locator("#view [data-q], #view button.sugg").count() == 0
+        assert page.locator(".hero .sugg.skeleton").count() == 4
+        expect(page.locator("#prompt")).to_be_disabled()
+        expect(page.locator("#send")).to_be_disabled()
+        expect(page.locator("#prompt")).to_have_attribute("placeholder", "Getting ready…")
+        expect(page.locator("#composerNote")).to_contain_text("Getting ready")
+    run.ok(
+        "demo start-up: progress steps and download note shown, no raw persona id, no placeholder questions, "
+        "composer disabled with 'Getting ready…' (0.5 s and 3 s)"
+    )
+    return note
+
+
 def demo(run: Run, p, port: int, pyodide_dir: Path | None) -> None:
     from playwright.sync_api import expect
+
+    from demo import engine
 
     httpd = serve(port)
     browser = p.chromium.launch()
     page = browser.new_page(viewport={"width": 1366, "height": 900})
     run.watch(page)
-    if pyodide_dir:
-        local = pyodide_dir.resolve()
-
-        def fulfill(route):
-            name = route.request.url.split(CDN, 1)[1].split("?", 1)[0]
-            f = local / name
-            if f.is_file():
-                ctype = "application/wasm" if name.endswith(".wasm") else None
-                route.fulfill(path=str(f), content_type=ctype, headers={"Access-Control-Allow-Origin": "*"})
-            else:
-                route.fulfill(status=404, body=f"not in local pyodide dir: {name}")
-
-        page.route(f"{CDN}**", fulfill)
+    served: dict[str, int] = {}
+    route_pyodide(page, pyodide_dir, served)
 
     started = time.time()
-    page.goto(f"http://127.0.0.1:{port}/demo/")
+    page.goto(f"http://127.0.0.1:{port}/demo/", wait_until="commit")
+    note = boot_state(run, page, started)
     page.wait_for_function("document.body.dataset.ready", timeout=240_000)
-    assert page.evaluate("document.body.dataset.ready") == "true", page.inner_text("#bootNote")
+    assert page.evaluate("document.body.dataset.ready") == "true", page.inner_text("#view")
     run.ok(f"demo: Pyodide loaded, gateway modules fetched, samples ingested ({time.time() - started:.0f} s)")
+    page.wait_for_selector(".hero button.sugg")
+    asked = page.locator(".hero button.sugg").evaluate_all("bs => bs.map((b) => b.dataset.q)")
+    assert asked == [q for q, _ in engine.PERSONAS["priya"]["suggested"]], asked
+    popular = page.locator(".hist-list.popular button").evaluate_all("bs => bs.map((b) => b.dataset.q)")
+    assert popular == [q for q, _ in engine.STAFF_POPULAR], popular
+    assert page.locator(".boot-steps, .sugg.skeleton").count() == 0
+    expect(page.locator(".hero h1")).to_contain_text("Priya")
+    expect(page.locator("#prompt")).to_be_enabled()
+    run.shot(page, "demo-boot-ready", full=False)
+    run.ok("demo start-up: once ready, Priya's own suggested and popular questions (demo/engine.py) appear")
+    if served:  # the download size quoted in the start-up note, measured from the files Pyodide asked for
+        mb = sum(served.values()) / 1e6
+        quoted = int(re.search(r"about (\d+) MB", note).group(1))
+        assert quoted == round(mb), (quoted, mb, sorted(served))
+        run.ok(f"demo start-up: note quotes about {quoted} MB; Pyodide fetched {len(served)} files, {mb:.1f} MB")
     expect(page.locator("#modeBadge")).to_contain_text("Demo")
     expect(page.locator("#modeBadge")).to_have_class(re.compile("demo"))
     run.ok("demo: header badge says Demo")
@@ -514,8 +579,52 @@ def demo(run: Run, p, port: int, pyodide_dir: Path | None) -> None:
     run.ok("demo: browser back returns to the previous screen")
 
     mobile_pass(run, page, "demo")
+    french_locale(run, browser, port, pyodide_dir)
     browser.close()
     httpd.shutdown()
+
+
+def french_locale(run: Run, browser, port: int, pyodide_dir: Path | None) -> None:
+    """Under a fr-FR browser the KPI tiles still read "$…", and figure elements opt out of page translation."""
+    from playwright.sync_api import expect
+
+    ctx = browser.new_context(locale="fr-FR", viewport={"width": 1366, "height": 900})
+    page = ctx.new_page()
+    run.watch(page)
+    route_pyodide(page, pyodide_dir, {})
+    page.goto(f"http://127.0.0.1:{port}/demo/?tour=0#/overview")
+    page.wait_for_selector("#bizVolume svg.chart")
+    assert page.evaluate("navigator.language") == "fr-FR"
+    tiles = page.locator(".kpi.sample")
+    expect(tiles).to_have_count(8)
+    kpis = page.inner_text(".kpis")
+    assert "USD" not in kpis and "\u202f" not in kpis and "\xa0" not in kpis, kpis
+    cost = tiles.filter(has_text="Cost per answer")
+    assert re.fullmatch(r"\$\d+\.\d{2}", cost.locator(".value").inner_text()), cost.locator(".value").inner_text()
+    assert re.search(r"\$[\d,]+K? for the GPU server", cost.locator(".sub").inner_text())
+    assert re.search(r"≈ \$[\d,.]+[KMB]? at", tiles.filter(has_text="Hours saved").locator(".sub").inner_text())
+    assert re.fullmatch(r"\d{1,3}(,\d{3})*", tiles.filter(has_text="Questions answered").locator(".value").inner_text())
+    untranslatable = page.evaluate("""() => {
+      const all = (sel) => [...document.querySelectorAll(sel)];
+      const figures = all(
+        '.kpi .value, .kpi .sub, .kpi-foot, svg.chart, svg.spark, table.depts td.num, .meter-bar, .cv');
+      return {
+        figures: figures.length,
+        translatable: figures.filter((el) => el.closest('[translate="no"]') === null).length,
+        labels: all('.kpi .label, .card-head h2').filter((el) => el.closest('[translate="no"]') !== null).length,
+        page: document.documentElement.getAttribute('translate'),
+        banner: all('.banner.sample [translate="no"]').map((el) => el.textContent),
+      };
+    }""")
+    assert untranslatable["figures"] > 40 and untranslatable["translatable"] == 0, untranslatable
+    assert untranslatable["labels"] == 0 and untranslatable["page"] is None, untranslatable
+    assert any(t.startswith("$") for t in untranslatable["banner"]), untranslatable["banner"]
+    run.shot(page, "demo-overview-fr-FR", full=False)
+    ctx.close()
+    run.ok(
+        f"demo overview under fr-FR: KPI money reads '$…' (no 'USD'); {untranslatable['figures']} figure elements "
+        'carry translate="no"; labels and the page stay translatable'
+    )
 
 
 # ------------------------------------------------------------------------------------------------

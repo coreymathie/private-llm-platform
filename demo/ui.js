@@ -155,7 +155,7 @@ export function stackedColumns(rows, series, { height = 210, ariaLabel = "chart"
   });
   g += `<line x1="${L}" x2="${W - R}" y1="${T + plotH}" y2="${T + plotH}" stroke="var(--border-strong)"/>`;
   const legend = series.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join("");
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ariaLabel)}">${g}</svg><div class="legend">${legend}</div>`;
+  return `<svg class="chart" translate="no" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ariaLabel)}">${g}</svg><div class="legend">${legend}</div>`;
 }
 
 /** Horizontal bars, one series. rows: [{label, value}] */
@@ -171,7 +171,7 @@ export function hbars(rows, { color = "var(--series-1)", ariaLabel = "chart", fm
     g += `<path class="bar" d="M${L},${y + 4}H${L + w - 4}Q${L + w},${y + 4} ${L + w},${y + 8}V${y + 16}Q${L + w},${y + 20} ${L + w - 4},${y + 20}H${L}Z" fill="${color}" data-tip="${esc(tip)}" tabindex="0" aria-label="${esc(tip)}"/>`;
     g += `<text x="${L + w + 6}" y="${y + 16}">${esc(fmtValue(r.value))}</text>`;
   });
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ariaLabel)}">${g}</svg>`;
+  return `<svg class="chart" translate="no" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ariaLabel)}">${g}</svg>`;
 }
 
 /** Grouped columns on a 0..1 scale. groups: [{label, values: {key: v}}], series: [{key,label,color}] */
@@ -200,5 +200,5 @@ export function groupedColumns(groups, series, { height = 260, ariaLabel = "char
   });
   g += `<line x1="${L}" x2="${W - R}" y1="${T + plotH}" y2="${T + plotH}" stroke="var(--border-strong)"/>`;
   const legend = series.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join("");
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ariaLabel)}">${g}</svg><div class="legend">${legend}</div>`;
+  return `<svg class="chart" translate="no" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(ariaLabel)}">${g}</svg><div class="legend">${legend}</div>`;
 }

@@ -4,7 +4,7 @@ import {
   $, $$, esc, fmt, pct, time, isError, errText, loading, empty, errorBox, statusPill, aclChips, sim, parseAcl,
   toast, openDrawer, openModal, closeOverlays, stackedColumns, hbars, groupedColumns,
 } from "./ui.js";
-import { chat, collectionLabel, docIcon, docMeta, docTitle, reviewed } from "./assistant.js";
+import { catalog, chat, collectionLabel, docIcon, docMeta, docTitle, reviewed } from "./assistant.js";
 
 const REPO = "https://github.com/coreymathie/private-llm-platform/blob/main/";
 const signInHint = (S) => (S.A.mode === "live" ? 'Add an admin API key on <a href="#/settings">Settings</a>.' : "");
@@ -64,16 +64,16 @@ function spark(values, color = "var(--accent)") {
   const W = 120, H = 28, min = Math.min(...values), span = Math.max(...values) - min || 1;
   const pts = values.map((v, i) => [(i / Math.max(1, values.length - 1)) * (W - 4) + 2, H - 3 - ((v - min) / span) * (H - 6)]);
   const [lx, ly] = pts[pts.length - 1];
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><path d="${pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join("")}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.4" fill="${color}"/></svg>`;
+  return `<svg class="spark" translate="no" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true"><path d="${pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join("")}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.4" fill="${color}"/></svg>`;
 }
 
 function delta(cur, prev, { better = "up", kind = "pct" } = {}) {
-  if (prev == null || !isFinite(prev) || prev === 0) return '<span class="delta flat">no prior period</span>';
+  if (prev == null || !isFinite(prev) || prev === 0) return '<span class="delta flat" translate="no">no prior period</span>';
   const change = kind === "pts" ? (cur - prev) * 100 : ((cur - prev) / Math.abs(prev)) * 100;
-  if (Math.abs(change) < 0.05) return '<span class="delta flat">no change</span>';
+  if (Math.abs(change) < 0.05) return '<span class="delta flat" translate="no">no change</span>';
   const up = change > 0, good = (better === "up") === up;
   const label = kind === "pts" ? `${up ? "+" : "−"}${Math.abs(change).toFixed(1)} pts` : `${up ? "+" : "−"}${Math.abs(change).toFixed(1)}%`;
-  return `<span class="delta ${good ? "good" : "bad"}" title="vs the previous period"><span aria-hidden="true">${up ? "▲" : "▼"}</span> ${label}</span>`;
+  return `<span translate="no" class="delta ${good ? "good" : "bad"}" title="vs the previous period"><span aria-hidden="true">${up ? "▲" : "▼"}</span> ${label}</span>`;
 }
 
 function agg(days) {
@@ -92,7 +92,7 @@ function agg(days) {
 }
 
 function kpi(label, value, sub, d, sp) {
-  return `<div class="card kpi sample"><div class="label">${esc(label)}</div><div class="value">${value}</div><div class="kpi-foot">${d}${sp}</div><div class="sub">${sub}</div></div>`;
+  return `<div class="card kpi sample"><div class="label">${esc(label)}</div><div translate="no" class="value">${value}</div><div class="kpi-foot" translate="no">${d}${sp}</div><div class="sub" translate="no">${sub}</div></div>`;
 }
 
 async function overview(view, S) {
@@ -118,8 +118,8 @@ async function overview(view, S) {
     `How the private assistant is serving <b>${esc(co.name)}</b>'s employees.`,
     `<div class="seg" role="group" aria-label="Date range">${RANGES.map(([n, label]) => `<button type="button" data-range="${n}" aria-pressed="${n === range}">${label}</button>`).join("")}</div><a class="btn primary" href="#/chat">Ask a question</a>`,
   ) + ovTabs("business") + `
-  ${S.bannerHidden ? "" : `<div class="banner sample" role="note" id="sampleBanner"><span><strong>Sample workspace.</strong> ${esc(co.name)} is a fictional credit union (${num(co.employees)} employees, ${co.branches} branches, ${money(co.assets_usd)} in assets). Its people, documents and usage numbers are invented for this demo<span class="tech-only"> by <code>${esc(data.generated_by)}</code> (seed ${esc(data.seed)})</span>; the results under <a href="#/evals">Answer quality</a> are measured on the real code.</span><button type="button" class="ghost sm" id="bannerX" aria-label="Dismiss the sample workspace note">Dismiss</button></div>`}
-  <p class="muted small period">${esc(period)} · ${range} days${p ? ` · compared with the ${range} days before` : ""}</p>
+  ${S.bannerHidden ? "" : `<div class="banner sample" role="note" id="sampleBanner"><span><strong>Sample workspace.</strong> ${esc(co.name)} is a fictional credit union (<span translate="no">${num(co.employees)}</span> employees, <span translate="no">${co.branches}</span> branches, <span translate="no">${money(co.assets_usd)}</span> in assets). Its people, documents and usage numbers are invented for this demo<span class="tech-only"> by <code>${esc(data.generated_by)}</code> (seed ${esc(data.seed)})</span>; the results under <a href="#/evals">Answer quality</a> are measured on the real code.</span><button type="button" class="ghost sm" id="bannerX" aria-label="Dismiss the sample workspace note">Dismiss</button></div>`}
+  <p class="muted small period" translate="no">${esc(period)} · ${range} days${p ? ` · compared with the ${range} days before` : ""}</p>
   <div class="grid kpis four">
     ${kpi("Questions answered", num(t.answered), `${num(t.questions)} asked · ${num(Math.round(t.questions / range))} a day`, delta(t.answered, p?.answered), spark(series((d) => d.answered)))}
     ${kpi("Answered from documents", pct1(t.answer_rate), `with citations · ${num(t.no_answer)} found nothing to cite`, delta(t.answer_rate, p?.answer_rate, { kind: "pts" }), spark(series((d) => d.answered / Math.max(1, d.questions))))}
@@ -137,9 +137,9 @@ async function overview(view, S) {
       <div class="card"><div class="card-head"><div><h2>What employees ask about</h2><p>Questions by topic, ${range} days.</p></div></div><div id="bizTopics"></div></div>
       <div class="card"><div class="card-head"><div><h2>Response time</h2><p>From question to cited answer on the on-prem server. The gateway's own overhead is <a href="#/evals">measured</a> separately.</p></div></div>
         <div class="split-stats">
-          <div><div class="label">Median</div><div class="value">${(t.p50_ms / 1000).toFixed(1)} s</div>${delta(t.p50_ms, p?.p50_ms, { better: "down" })}</div>
-          <div><div class="label">95th percentile</div><div class="value">${(Math.max(...days.map((d) => d.p95_ms)) / 1000).toFixed(1)} s</div><span class="muted small">slowest day</span></div>
-          <div><div class="label">Questions with no answer</div><div class="value">${pct1(1 - t.answer_rate)}</div>${delta(1 - t.answer_rate, p ? 1 - p.answer_rate : null, { better: "down", kind: "pts" })}</div>
+          <div><div class="label">Median</div><div translate="no" class="value">${(t.p50_ms / 1000).toFixed(1)} s</div>${delta(t.p50_ms, p?.p50_ms, { better: "down" })}</div>
+          <div><div class="label">95th percentile</div><div translate="no" class="value">${(Math.max(...days.map((d) => d.p95_ms)) / 1000).toFixed(1)} s</div><span class="muted small">slowest day</span></div>
+          <div><div class="label">Questions with no answer</div><div translate="no" class="value">${pct1(1 - t.answer_rate)}</div>${delta(1 - t.answer_rate, p ? 1 - p.answer_rate : null, { better: "down", kind: "pts" })}</div>
         </div>
       </div>
     </div>
@@ -154,8 +154,8 @@ async function overview(view, S) {
       <dl class="facts">
         <div><dt>Organization</dt><dd>${esc(co.name)}</dd></div>
         <div><dt>Industry</dt><dd>${esc(co.industry)}</dd></div>
-        <div><dt>Employees</dt><dd>${num(co.employees)} in ${data.departments.length} departments</dd></div>
-        <div><dt>Members</dt><dd>${num(co.members)}</dd></div>
+        <div><dt>Employees</dt><dd><span translate="no">${num(co.employees)}</span> in <span translate="no">${data.departments.length}</span> departments</dd></div>
+        <div><dt>Members</dt><dd translate="no">${num(co.members)}</dd></div>
         <div><dt>Deployment</dt><dd>${esc(co.deployment)}</dd></div>
         <div><dt>Oversight</dt><dd>${co.regulators.map(esc).join(", ")}</dd></div>
       </dl>
@@ -178,13 +178,13 @@ async function overview(view, S) {
 function deptTable(rows) {
   return `<div class="table-wrap"><table class="depts"><thead><tr><th>Department</th><th class="num">Questions</th><th>Using it</th></tr></thead><tbody>${rows.map((r) => {
     const share = r.active_users_30d / r.headcount;
-    return `<tr><td>${esc(r.department)}<span class="share">${num(r.headcount)} staff · ${pct1(r.answer_rate, 0)} answered</span></td><td class="num">${num(r.questions_30d)}</td><td><span class="meter-bar" role="img" aria-label="${pct1(share, 0)} of staff"><i style="width:${(share * 100).toFixed(1)}%"></i></span> <span class="nw">${num(r.active_users_30d)} · ${pct1(share, 0)}</span></td></tr>`;
+    return `<tr><td>${esc(r.department)}<span class="share" translate="no">${num(r.headcount)} staff · ${pct1(r.answer_rate, 0)} answered</span></td><td class="num" translate="no">${num(r.questions_30d)}</td><td><span class="meter-bar" translate="no" role="img" aria-label="${pct1(share, 0)} of staff"><i style="width:${(share * 100).toFixed(1)}%"></i></span> <span class="nw" translate="no">${num(r.active_users_30d)} · ${pct1(share, 0)}</span></td></tr>`;
   }).join("")}</tbody></table></div>`;
 }
 
 function collectionsTable(rows) {
   const total = rows.reduce((a, r) => a + r.documents, 0), passages = rows.reduce((a, r) => a + r.passages, 0);
-  return `<div class="table-wrap"><table><thead><tr><th>Collection</th><th class="num">Documents</th><th>Who may read</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.collection)}<span class="share tech-only">${num(r.passages)} passages</span></td><td class="num">${num(r.documents)}</td><td class="small">${esc(r.access)}</td></tr>`).join("")}</tbody><tfoot><tr><th>Total</th><th class="num">${num(total)}</th><th class="small"><span class="tech-only">${num(passages)} passages indexed</span></th></tr></tfoot></table></div>`;
+  return `<div class="table-wrap"><table><thead><tr><th>Collection</th><th class="num">Documents</th><th>Who may read</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.collection)}<span class="share tech-only" translate="no">${num(r.passages)} passages</span></td><td class="num" translate="no">${num(r.documents)}</td><td class="small">${esc(r.access)}</td></tr>`).join("")}</tbody><tfoot><tr><th>Total</th><th class="num" translate="no">${num(total)}</th><th class="small"><span class="tech-only">${num(passages)} passages indexed</span></th></tr></tfoot></table></div>`;
 }
 
 function governanceList(c, t) {
@@ -196,7 +196,7 @@ function governanceList(c, t) {
     ["Personal identifiers redacted in prompts", num(t.pii_redacted), "Before anything is logged"],
     ["Answers with prompt-injection flags", num(t.injection_flagged), "Instructions inside documents are ignored"],
   ];
-  return `<ul class="checklist">${rows.map(([label, v, why]) => `<li><span class="ck" aria-hidden="true">✓</span><div><b>${esc(label)}</b><span class="muted small">${esc(why)}</span></div><span class="cv">${esc(v)}</span></li>`).join("")}</ul>`;
+  return `<ul class="checklist">${rows.map(([label, v, why]) => `<li><span class="ck" aria-hidden="true">✓</span><div><b>${esc(label)}</b><span class="muted small">${esc(why)}</span></div><span class="cv" translate="no">${esc(v)}</span></li>`).join("")}</ul>`;
 }
 
 // ---------- Overview › This session ----------
@@ -217,16 +217,16 @@ async function overviewSession(view, S) {
   }));
   const events = Object.entries(ov.audit.events).map(([label, value]) => ({ label, value })).slice(0, 10);
   const seed = A.caps.seed && ov.documents.documents === 0
-    ? `<div class="card banner info" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><span><strong>No documents yet.</strong> Load the Cypress Harbor sample library (13 policies, three restricted) and three API keys through the real API.</span><button class="primary" id="seedBtn">Load sample data</button></div></div>`
+    ? `<div class="card banner info" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><span><strong>No documents yet.</strong> Load the Cypress Harbor sample library (${catalog().documents.length} documents, ${catalog().documents.filter((d) => d.acl.length).length} restricted) and three API keys through the real API.</span><button class="primary" id="seedBtn">Load sample data</button></div></div>`
     : "";
   box.innerHTML = `${seed}
   <div class="grid kpis six">
-    <div class="card kpi"><div class="label">Requests</div><div class="value" data-kpi="requests">${fmt(ov.requests.total)}</div><div class="sub">${fmt(ov.requests.tokens)} tokens · ${fmt(ov.requests.questions)} document questions</div></div>
-    <div class="card kpi"><div class="label">Identities</div><div class="value">${fmt(ov.identities.keys_active)}</div><div class="sub">active API keys · ${fmt(ov.identities.token_users)} SSO users · ${fmt(ov.identities.keys_revoked)} revoked</div></div>
-    <div class="card kpi"><div class="label">Knowledge</div><div class="value" data-kpi="documents">${fmt(ov.documents.documents)}</div><div class="sub">documents in ${fmt(ov.documents.collections)} collection(s) · ${fmt(ov.documents.passages)} passages</div></div>
-    <div class="card kpi"><div class="label">Retrieval quality</div><div class="value">${hybrid ? pct(hybrid["recall@1"]) : "–"}</div><div class="sub">recall@1, hybrid · MRR ${hybrid ? hybrid.mrr.toFixed(3) : "–"} · <a href="#/evals">measured offline</a></div></div>
-    <div class="card kpi"><div class="label">Audit chain</div><div class="value ${chainOk ? "ok" : "bad"}" data-kpi="chain">${chainOk ? "Intact" : "Broken"}</div><div class="sub">${chainOk ? `${fmt(ov.audit.entries)} entries verified` : `tampering detected at line ${ov.audit.bad_line}`}</div></div>
-    <div class="card kpi"><div class="label">Access decisions</div><div class="value">${fmt(ov.access_decisions.allow)} <span class="muted" style="font-size:16px">allow</span></div><div class="sub">${fmt(ov.access_decisions.deny)} denied · ${fmt(ov.injection_flagged_answers)} answer(s) with injection flags</div></div>
+    <div class="card kpi"><div class="label">Requests</div><div translate="no" class="value" data-kpi="requests">${fmt(ov.requests.total)}</div><div class="sub" translate="no">${fmt(ov.requests.tokens)} tokens · ${fmt(ov.requests.questions)} document questions</div></div>
+    <div class="card kpi"><div class="label">Identities</div><div translate="no" class="value">${fmt(ov.identities.keys_active)}</div><div class="sub" translate="no">active API keys · ${fmt(ov.identities.token_users)} SSO users · ${fmt(ov.identities.keys_revoked)} revoked</div></div>
+    <div class="card kpi"><div class="label">Knowledge</div><div translate="no" class="value" data-kpi="documents">${fmt(ov.documents.documents)}</div><div class="sub" translate="no">documents in ${fmt(ov.documents.collections)} collection(s) · ${fmt(ov.documents.passages)} passages</div></div>
+    <div class="card kpi"><div class="label">Retrieval quality</div><div translate="no" class="value">${hybrid ? pct(hybrid["recall@1"]) : "–"}</div><div class="sub" translate="no">recall@1, hybrid · MRR ${hybrid ? hybrid.mrr.toFixed(3) : "–"} · <a href="#/evals">measured offline</a></div></div>
+    <div class="card kpi"><div class="label">Audit chain</div><div translate="no" class="value ${chainOk ? "ok" : "bad"}" data-kpi="chain">${chainOk ? "Intact" : "Broken"}</div><div class="sub" translate="no">${chainOk ? `${fmt(ov.audit.entries)} entries verified` : `tampering detected at line ${ov.audit.bad_line}`}</div></div>
+    <div class="card kpi"><div class="label">Access decisions</div><div translate="no" class="value">${fmt(ov.access_decisions.allow)} <span class="muted" style="font-size:16px">allow</span></div><div class="sub" translate="no">${fmt(ov.access_decisions.deny)} denied · ${fmt(ov.injection_flagged_answers)} answer(s) with injection flags</div></div>
   </div>
   <div class="grid two" style="margin-top:16px">
     <div class="card"><div class="card-head"><div><h2>Activity</h2><p>Per ${ov.activity.bucket_seconds >= 3600 ? ov.activity.bucket_seconds / 3600 + " h" : ov.activity.bucket_seconds / 60 + " min"}, from the audit log</p></div></div>
@@ -425,8 +425,8 @@ async function users(view, S) {
     ${keys.map((k) => `<tr data-label="${esc(k.label)}"><td><b>${esc(k.label)}</b><div class="muted tiny">${time(k.created_at)}</div></td><td class="mono small tech-only">${esc(k.masked)}</td>
       <td>${k.is_admin ? '<span class="pill info">admin</span>' : '<span class="pill">user</span>'} ${(k.groups || []).map((g) => `<span class="pill">group:${esc(g)}</span>`).join(" ")}</td>
       <td>${k.revoked ? '<span class="pill bad">revoked</span>' : '<span class="pill ok">active</span>'}</td>
-      <td class="num">${fmt(k.requests_total)}</td><td class="num tech-only">${fmt(k.tokens_total)}</td>
-      <td class="num hide-sm">${k.revoked ? "–" : `${fmt(windowOf.get(k.label + k.masked) ?? 0)} / ${fmt(limit)}`}</td>
+      <td class="num" translate="no">${fmt(k.requests_total)}</td><td translate="no" class="num tech-only">${fmt(k.tokens_total)}</td>
+      <td translate="no" class="num hide-sm">${k.revoked ? "–" : `${fmt(windowOf.get(k.label + k.masked) ?? 0)} / ${fmt(limit)}`}</td>
       <td><div class="row" style="flex-wrap:nowrap">${k.revoked ? "" : `<button class="sm tech-only" data-act="send" data-id="${esc(k.id)}" title="Send one test request with this key">Test</button><button class="sm tech-only" data-act="burst" data-id="${esc(k.id)}" title="Send limit + 2 requests at once">Burst</button><button class="sm ghost danger" data-act="revoke" data-id="${esc(k.id)}">Revoke</button>`}</div></td></tr>`).join("")}
     </tbody></table></div>
     <div id="sendLog" class="small" style="margin-top:10px;max-height:240px;overflow-y:auto"></div>
@@ -447,7 +447,7 @@ async function users(view, S) {
       ${A.mode === "demo" ? `<p class="muted small tech-only" style="margin-top:8px">Demo personas Priya, Dana and Audrey are SSO users built from token claims by <code>identity.principal_for_claims()</code>; the JWT signature check runs only on the server. ${sim("simulated IdP")}</p>` : ""}
       <h3 style="margin:14px 0 8px">People who used it</h3>
       ${Array.isArray(tokenUsers) && tokenUsers.length ? `<div class="table-wrap"><table><thead><tr><th>Person</th><th class="num">Requests</th><th class="num">Tokens</th><th>Last seen</th></tr></thead><tbody>
-        ${tokenUsers.map((u) => `<tr><td>${esc(personName(u.label))}<div class="muted tiny tech-only mono">${esc(u.label)}</div></td><td class="num">${fmt(u.requests_total)}</td><td class="num">${fmt(u.tokens_total)}</td><td class="small">${time(u.last_seen)}</td></tr>`).join("")}</tbody></table></div>` : empty("No token users yet.")}
+        ${tokenUsers.map((u) => `<tr><td>${esc(personName(u.label))}<div class="muted tiny tech-only mono">${esc(u.label)}</div></td><td class="num" translate="no">${fmt(u.requests_total)}</td><td class="num" translate="no">${fmt(u.tokens_total)}</td><td class="small">${time(u.last_seen)}</td></tr>`).join("")}</tbody></table></div>` : empty("No token users yet.")}
     </div>
   </div>`;
 
@@ -516,7 +516,7 @@ function auditTimeline(e, titlesMap) {
     add("Access decision", `<b>${esc(a.decision)}</b> by <code>${esc(a.basis)}</code> · ${a.documents_visible} document(s) visible, ${a.documents_hidden} hidden. Decided before any passage was loaded.`, a.decision === "allow" ? "" : "deny", p.timings_ms ? `${p.timings_ms.access} ms` : "");
     if (e.event === "document_question") {
       add("Retrieval", `<code>${esc(p.retrieval?.mode)}</code>${p.retrieval?.reranker !== "none" ? ` + <code>${esc(p.retrieval?.reranker)}</code>` : ""} over readable passages only → ${p.sources.length} passage(s)`, "", p.timings_ms ? `${p.timings_ms.retrieval} ms` : "");
-      add("Sources", `<div class="table-wrap"><table><thead><tr><th>Document</th><th class="num">Score</th><th>Rule</th><th>Cited</th></tr></thead><tbody>${p.sources.map((s) => `<tr><td>${esc(titlesMap.get(s.doc_id) || s.doc_id)} <span class="muted tiny">#${s.chunk}</span>${(s.injection_flags || []).map((f) => ` <span class="pill bad">${esc(f)}</span>`).join("")}</td><td class="num">${s.score}</td><td class="small"><code>${esc(s.access)}</code></td><td>${s.cited ? '<span class="pill ok">cited</span>' : "–"}</td></tr>`).join("")}</tbody></table></div>`,
+      add("Sources", `<div class="table-wrap"><table><thead><tr><th>Document</th><th class="num">Score</th><th>Rule</th><th>Cited</th></tr></thead><tbody>${p.sources.map((s) => `<tr><td>${esc(titlesMap.get(s.doc_id) || s.doc_id)} <span class="muted tiny">#${s.chunk}</span>${(s.injection_flags || []).map((f) => ` <span class="pill bad">${esc(f)}</span>`).join("")}</td><td class="num" translate="no">${s.score}</td><td class="small"><code>${esc(s.access)}</code></td><td>${s.cited ? '<span class="pill ok">cited</span>' : "–"}</td></tr>`).join("")}</tbody></table></div>`,
         p.sources.some((s) => (s.injection_flags || []).length) ? "warn" : "");
       add("Generation", `Model <code>${esc(p.model)}</code>${p.model_verification ? ` (supply chain: ${esc(p.model_verification)})` : ""} · ${fmt(p.tokens)} tokens`, "", p.timings_ms ? `${p.timings_ms.generation} ms` : "");
       add("Answer", p.question !== undefined ? `<div><b>Q:</b> ${esc(p.question)}</div><div><b>A:</b> ${esc(p.answer)}</div><div class="tiny">As stored: PII-redacted when GATEWAY_REDACT_PROMPTS=true.</div>` : "Question and answer text not logged (GATEWAY_LOG_PROMPTS=false). The sources and decision above are always recorded.");
@@ -573,7 +573,7 @@ async function auditScreen(view, S) {
     const shown = rows.slice(0, f.limit || 25);
     $("#auditBody", view).innerHTML = shown.map((e) => {
       const s = e.summary;
-      return `<tr class="clickable" data-line="${e.line}" tabindex="0"><td class="num">${e.line}</td><td class="small nowrap">${time(e.ts)}</td><td>${esc(eventLabel(e.event))}<div class="tech-only"><code>${esc(e.event)}</code></div></td><td class="small">${esc(personName(s.actor))}</td>
+      return `<tr class="clickable" data-line="${e.line}" tabindex="0"><td class="num" translate="no">${e.line}</td><td class="small nowrap">${time(e.ts)}</td><td>${esc(eventLabel(e.event))}<div class="tech-only"><code>${esc(e.event)}</code></div></td><td class="small">${esc(personName(s.actor))}</td>
         <td>${s.decision ? `<span class="pill ${s.decision === "allow" ? "ok" : "bad"}">${s.decision === "allow" ? "allowed" : "denied"}</span> <span class="muted tiny tech-only">access=${esc(s.basis)}</span>` : ""}</td>
         <td class="small">${s.cited.map((id) => esc(docTitle(tmap.get(id) || id))).join(", ")}${s.flags.length ? ` <span class="pill bad">injection flag</span>` : ""}</td></tr>`;
     }).join("") || `<tr><td colspan="6">${empty("No entries match.")}</td></tr>`;
@@ -624,9 +624,9 @@ async function modelsScreen(view, S) {
   const models = Object.values(v.models || {});
   box.innerHTML = `
   <div class="grid kpis four">
-    <div class="card kpi"><div class="label">Backend</div><div class="value" style="font-size:22px">${esc(m.backend.name)}</div><div class="sub">${m.backend.healthy ? '<span class="pill ok">healthy</span>' : '<span class="pill bad">unreachable</span>'} ${A.mode === "demo" ? sim() : ""}</div></div>
-    <div class="card kpi"><div class="label">${A.mode === "demo" ? "Chat / embedding model" : "Served models"}</div><div class="value" style="font-size:16px;margin-top:10px">${A.mode === "demo" ? `<code>${esc(m.backend.chat_model)}</code><br><code>${esc(m.backend.embed_model)}</code>` : (m.served || []).map((x) => `<code>${esc(x)}</code>`).join("<br>") || esc(m.served_error || "none")}</div></div>
-    <div class="card kpi"><div class="label">Supply-chain status</div><div class="value ${v.ok && models.some((x) => x.pinned) ? "ok" : v.ok ? "" : "bad"}" id="scStatus">${v.error ? "Unavailable" : v.ok ? (models.some((x) => x.pinned) ? "Verified" : "No pins") : "Problems"}</div><div class="sub">${esc(v.error || `${models.filter((x) => x.status === "verified").length} verified · ${models.filter((x) => x.status === "unpinned").length} unpinned · ${models.filter((x) => ["mismatch", "missing"].includes(x.status)).length} mismatched/missing`)}</div></div>
+    <div class="card kpi"><div class="label">Backend</div><div translate="no" class="value" style="font-size:22px">${esc(m.backend.name)}</div><div class="sub" translate="no">${m.backend.healthy ? '<span class="pill ok">healthy</span>' : '<span class="pill bad">unreachable</span>'} ${A.mode === "demo" ? sim() : ""}</div></div>
+    <div class="card kpi"><div class="label">${A.mode === "demo" ? "Chat / embedding model" : "Served models"}</div><div translate="no" class="value" style="font-size:16px;margin-top:10px">${A.mode === "demo" ? `<code>${esc(m.backend.chat_model)}</code><br><code>${esc(m.backend.embed_model)}</code>` : (m.served || []).map((x) => `<code>${esc(x)}</code>`).join("<br>") || esc(m.served_error || "none")}</div></div>
+    <div class="card kpi"><div class="label">Supply-chain status</div><div translate="no" class="value ${v.ok && models.some((x) => x.pinned) ? "ok" : v.ok ? "" : "bad"}" id="scStatus">${v.error ? "Unavailable" : v.ok ? (models.some((x) => x.pinned) ? "Verified" : "No pins") : "Problems"}</div><div class="sub" translate="no">${esc(v.error || `${models.filter((x) => x.status === "verified").length} verified · ${models.filter((x) => x.status === "unpinned").length} unpinned · ${models.filter((x) => ["mismatch", "missing"].includes(x.status)).length} mismatched/missing`)}</div></div>
     <div class="card kpi"><div class="label">Model policy</div><div class="seg" id="policySeg" style="margin-top:10px">${["off", "warn", "enforce"].map((p) => `<button data-pol="${p}" aria-pressed="${p === m.policy}">${p}</button>`).join("")}</div><div class="sub" style="margin-top:8px">enforce: only approved, verified models are used</div></div>
   </div>
   <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>Verification ${A.mode === "demo" ? sim("simulated Ollama inventory") : ""}</h2><p>${A.mode === "demo" ? "A stand-in Ollama model list with made-up digests (SHA-256 of a fixed string, not real model digests). Pinning, verification and the policy decision run <code>gateway/supply_chain.py</code>." : `Last checked ${v.checked_at ? time(v.checked_at * 1000) : "never"}${v.lock_file ? ` against <code>${esc(v.lock_file)}</code>` : " (no lock file configured: set GATEWAY_MODEL_LOCK_FILE)"}.`}</p></div>
@@ -809,23 +809,23 @@ async function evals(view, S) {
   $("#ev", view).innerHTML = `
   <div class="banner info"><strong>Measured, not simulated.</strong> ${rep.questions} questions asked by the people on the Chat screen against the Cypress Harbor library itself: ${rep.documents} documents in ${rep.collections} collections, ${rep.restricted_documents} of them restricted. ${rep.answerable} have an answer in a document the asker may read; ${rep.declines} should be declined, because nothing answers them or the answer is in a document the asker is not cleared for. The questions are paraphrased the way staff ask and were written after the library, which was not tuned to them. It measures finding, citing and declining; it isn't a test of a large language model's writing.<span class="tech-only"> k=${rep.k}. Embedder: ${esc(rep.embedder)}. Answers: ${esc(rep.answerer)}. Produced by <code>${esc(data.generated_by)}</code>.</span></div>
   <div class="grid kpis four" style="margin-top:16px">
-    <div class="card kpi"><div class="label">Release check</div><div class="value ${gatePass ? "ok" : "bad"}" id="gate">${gatePass ? "Pass" : "Fail"}</div><div class="sub">${gatePass ? "every gated metric meets its threshold" : esc(data.problems.join("; "))}</div></div>
-    <div class="card kpi"><div class="label">ACL leaks</div><div class="value ${leaks ? "bad" : "ok"}">${leaks}</div><div class="sub">times a restricted document reached someone not cleared for it (must be 0)</div></div>
-    <div class="card kpi"><div class="label">Right document ranked first</div><div class="value">${pct(r["recall@1"])}</div><div class="sub">in the top ${rep.k}: ${pct(r[`recall@${rep.k}`])}<span class="tech-only"> · recall@1 · MRR ${r.mrr.toFixed(3)} · ${esc(S.evalConfig)}</span></div></div>
-    <div class="card kpi"><div class="label">Cites only the right document</div><div class="value">${pct(r.citation_accuracy)}</div><div class="sub">answer has the key fact: ${pct(r.answer_contains)} · declines when it should: ${pct(r.decline_accuracy)}</div></div>
+    <div class="card kpi"><div class="label">Release check</div><div translate="no" class="value ${gatePass ? "ok" : "bad"}" id="gate">${gatePass ? "Pass" : "Fail"}</div><div class="sub" translate="no">${gatePass ? "every gated metric meets its threshold" : esc(data.problems.join("; "))}</div></div>
+    <div class="card kpi"><div class="label">ACL leaks</div><div translate="no" class="value ${leaks ? "bad" : "ok"}">${leaks}</div><div class="sub" translate="no">times a restricted document reached someone not cleared for it (must be 0)</div></div>
+    <div class="card kpi"><div class="label">Right document ranked first</div><div translate="no" class="value">${pct(r["recall@1"])}</div><div class="sub" translate="no">in the top ${rep.k}: ${pct(r[`recall@${rep.k}`])}<span class="tech-only"> · recall@1 · MRR ${r.mrr.toFixed(3)} · ${esc(S.evalConfig)}</span></div></div>
+    <div class="card kpi"><div class="label">Cites only the right document</div><div translate="no" class="value">${pct(r.citation_accuracy)}</div><div class="sub" translate="no">answer has the key fact: ${pct(r.answer_contains)} · declines when it should: ${pct(r.decline_accuracy)}</div></div>
   </div>
   <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>By search method</h2><p>Keyword (bm25), meaning (vector), both combined (hybrid), and with re-ranking</p></div></div>
     <div id="evalChart"></div>
-    <div class="table-wrap" style="margin-top:12px"><table id="scorecard"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">ACL leaks</th></tr></thead><tbody>
+    <div class="table-wrap" style="margin-top:12px"><table id="scorecard" translate="no"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">ACL leaks</th></tr></thead><tbody>
       ${configs.map((k) => `<tr class="clickable ${k === S.evalConfig ? "selected" : ""}" data-config="${esc(k)}" tabindex="0"><td><code>${esc(k)}</code></td>${METRICS.map(([m]) => {
         const v = rep.results[k][m], min = th[k] && th[k][m];
-        return `<td class="num">${v.toFixed(3)}${min !== undefined ? ` <span class="pill ${v >= min ? "ok" : "bad"}" title="threshold ${min}">${v >= min ? "≥" : "<"} ${min}</span>` : ""}</td>`;
-      }).join("")}<td class="num">${rep.results[k].acl_leaks}</td></tr>`).join("")}
+        return `<td class="num" translate="no">${v.toFixed(3)}${min !== undefined ? ` <span class="pill ${v >= min ? "ok" : "bad"}" title="threshold ${min}">${v >= min ? "≥" : "<"} ${min}</span>` : ""}</td>`;
+      }).join("")}<td class="num" translate="no">${rep.results[k].acl_leaks}</td></tr>`).join("")}
     </tbody></table></div>
   </div>
   <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>Questions not answered perfectly · ${esc(S.evalConfig)}</h2><p>Right document first, cited alone, and the key fact present; or, for a question to decline, "I don't know" with no citation. Click a search method above to switch.</p></div></div>
     ${r.failures.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Asked by</th><th>Question</th><th>Expected</th><th class="num">Rank</th><th>Cited</th><th>Result</th></tr></thead><tbody>
-      ${r.failures.map((f) => { const q = data.questions[f.id] || {}; const decline = !q.doc; return `<tr><td class="mono small">${esc(f.id)}</td><td class="small">${esc(personaName(S, q.persona || ""))}</td><td>${esc(q.question)}</td><td class="small">${decline ? "decline" : esc(q.doc)}</td><td class="num">${f.rank || "–"}</td><td class="small">${esc(f.cited.join(", ") || "none")}</td><td>${decline ? '<span class="pill bad">answered</span>' : f.contains ? '<span class="pill ok">fact present</span>' : '<span class="pill bad">fact missing</span>'}</td></tr>`; }).join("")}
+      ${r.failures.map((f) => { const q = data.questions[f.id] || {}; const decline = !q.doc; return `<tr><td class="mono small">${esc(f.id)}</td><td class="small">${esc(personaName(S, q.persona || ""))}</td><td>${esc(q.question)}</td><td class="small">${decline ? "decline" : esc(q.doc)}</td><td class="num" translate="no">${f.rank || "–"}</td><td class="small">${esc(f.cited.join(", ") || "none")}</td><td>${decline ? '<span class="pill bad">answered</span>' : f.contains ? '<span class="pill ok">fact present</span>' : '<span class="pill bad">fact missing</span>'}</td></tr>`; }).join("")}
     </tbody></table></div>` : empty("No misses.")}
   </div>
   <div id="browserRun"></div>`;
