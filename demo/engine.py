@@ -21,8 +21,9 @@ What is demo-only (this file):
   - The glue that main.py's FastAPI routes normally provide (mirrored closely).
   - DemoBackend, because there is no model in the browser:
       embeddings = deterministic hashed bag-of-words vectors (not a neural model)
-      chat       = extractive answer: the best-matching sentences from the
-                   retrieved passages, cited [n]; no text is generated.
+      chat       = extractive answer: the best-matching sentences from the one
+                   retrieved document that covers the question, cited [n], or
+                   "I don't know" when none does; no text is generated.
   - Tamper helpers that edit the audit file the way an attacker would.
   - Personas. Token (OIDC) personas are built from claims with the gateway's own
     identity.principal_for_claims(); the JWT signature check (PyJWT) is server-only
@@ -113,43 +114,90 @@ NO_ANSWER = "I don't know: none of the documents you can access answer that."
 # "How long", "how much", "how often": the question's form, not its subject. Ignored when picking answer
 # sentences, so "How long are records kept?" doesn't quote a sentence that says passwords are 14 characters long.
 QUESTION_FORM = {"long", "much", "many", "often", "fast", "soon"}
+# Common English function words (the NLTK English stopword list), dropped when deciding whether a document
+# covers a question, so "my", "here" and "get" don't count as words a document has to contain. Retrieval and
+# sentence scoring keep using STOPWORDS; this list only feeds the answerability check below.
+FUNCTION_WORDS = set(
+    "i me my myself we our ours ourselves you your yours yourself yourselves he him his himself she her hers "
+    "herself it its itself they them their theirs themselves what which who whom this that these those am is are "
+    "was were be been being have has had having do does did doing a an the and but if or because as until while "
+    "of at by for with about against between into through during before after above below to from up down in "
+    "out on off over under again further then once here there when where why how all any both each few more "
+    "most other some such no nor not only own same so than too very s t can will just don should now".split()
+)
+# A document answers a question only if its passages (and title) contain at least this many of the question's
+# content words, and more than a third of them. Below that, the answerer declines instead of quoting the
+# closest sentence. A question with a single content word must point at one document: "How long must passwords
+# be?" names the Password Standard by its title, while "What's the limit?" matches several documents and is
+# declined as ambiguous. Calibrated on the development question set (evals/README.md), not the held-out set.
+MIN_COVERED_TERMS = 2
 
 
-def extractive_answer(question: str, sources: list[tuple[int, str]], max_sentences: int = 3) -> str:
-    """BM25 over the retrieved passages' sentences; returns the best sentences with [n] citations.
+def content_terms(text: str) -> set[str]:
+    """Words a document has to contain to answer a question: terms() without function words or question form."""
+    return {t for t in terms(text, digits=True) if t not in FUNCTION_WORDS} - QUESTION_FORM
 
-    Sentences come from the best sentence's source or the top-ranked passage, unless another source scores
-    nearly as well (85%), so an answer doesn't stitch an unrelated policy onto the right one.
+
+def _title_terms(title: str) -> set[str]:  # "password-and-mfa-standard.md" -> {"password", "mfa", "standard"}
+    return content_terms(re.sub(r"[-_.]", " ", title.rsplit(".", 1)[0]))
+
+
+def extractive_answer(question: str, sources: list[tuple[int, str, str]], max_sentences: int = 3) -> str:
+    """Answer from one retrieved document, citing its passages [n], or decline with NO_ANSWER.
+
+    sources are (n, title, passage text), as numbered in the prompt. Steps:
+      1. Answerability: a document qualifies when its passages and title contain at least MIN_COVERED_TERMS of
+         the question's content words and more than a third of them. A one-word question qualifies the one
+         document whose title has the word, or else the only document that contains it. None: decline.
+      2. The answering document is the qualifying one that covers the most content words (ties: the best
+         sentence); if none of its sentences shares a word with the question, decline. Only that document is
+         quoted and cited, so an answer never adds a second document just because it was retrieved.
+      3. Its best sentences by BM25 (within 60% of its best), at most max_sentences.
     """
     q = set(terms(question, digits=True)) - QUESTION_FORM
-    cands, seen = [], set()
-    for n, text in sources:
+    cands, seen, vocab = [], set(), {}
+    for n, title, text in sources:
+        words = vocab.setdefault(title, set())
+        words.update(content_terms(text) | _title_terms(title))
         for s in _sentences(text):
             # Like the system prompt tells a real model: instructions inside documents are not followed.
             if s not in seen and not rag.injection_signals(s):
                 seen.add(s)
-                cands.append((n, s, terms(s, digits=True)))
+                cands.append((n, title, s, terms(s, digits=True)))
     if not q or not cands:
         return NO_ANSWER
-    df = Counter(t for _, _, ts in cands for t in set(ts))
-    avg = sum(len(ts) for _, _, ts in cands) / len(cands)
+    df = Counter(t for *_, ts in cands for t in set(ts))
+    avg = sum(len(ts) for *_, ts in cands) / len(cands)
     scored = []
-    for n, s, ts in cands:
+    for n, title, s, ts in cands:
         tf = Counter(ts)
         score = 0.0
         for t in q & tf.keys():
             idf = math.log(1 + (len(cands) - df[t] + 0.5) / (df[t] + 0.5))
             score += idf * tf[t] * 2.2 / (tf[t] + 1.2 * (0.25 + 0.75 * len(ts) / avg))
-        scored.append((score, n, s))
+        scored.append((score, n, title, s))
     scored.sort(key=lambda x: -x[0])
-    best, top_n = scored[0][0], scored[0][1]
-    if best <= 0:
+    key = content_terms(question)
+    best = {}
+    for score, _n, title, _s in scored:
+        best.setdefault(title, score)
+    if len(key) == 1:  # one word: it must point at one document, by its title or as the only one containing it
+        named = [t for t in vocab if key <= _title_terms(t)]
+        eligible = named if len(named) == 1 else [t for t in vocab if key <= vocab[t]]
+        eligible = eligible if len(eligible) == 1 else []
+    else:
+        need = max(MIN_COVERED_TERMS, len(key) // 3 + 1)
+        eligible = [t for t in vocab if len(key & vocab[t]) >= need]
+    if not eligible:
         return NO_ANSWER
-    picked = [x for x in scored if x[0] >= 0.6 * best and (x[1] in (top_n, 1) or x[0] >= 0.85 * best)][:max_sentences]
+    doc = max(eligible, key=lambda t: (len(key & vocab[t]), best.get(t, 0)))
+    if best.get(doc, 0) <= 0:  # the document that covers the question has no sentence to quote
+        return NO_ANSWER
+    picked = [x for x in scored if x[2] == doc and x[0] >= 0.6 * best[doc]][:max_sentences]
     numbers = {t for t in q if t.isdigit()}
-    if numbers & set(terms(scored[0][2], digits=True)):  # "level 3": keep to sentences about level 3
-        picked = [x for x in picked if numbers & set(terms(x[2], digits=True))]
-    return " ".join(f"{s.rstrip('.')} [{n}]." for _, n, s in picked)
+    if numbers & set(terms(picked[0][3], digits=True)):  # "level 3": keep to sentences about level 3
+        picked = [x for x in picked if numbers & set(terms(x[3], digits=True))]
+    return " ".join(f"{s.rstrip('.')} [{n}]." for _, n, _, s in picked)
 
 
 class DemoBackend:
@@ -166,9 +214,9 @@ class DemoBackend:
             sources = []
             for b in blocks:
                 head, _, body = b.partition("\n")
-                n = re.match(r"\[(\d+)\]", head)
+                n = re.match(r"\[(\d+)\] ?(.*)", head)
                 if n:
-                    sources.append((int(n.group(1)), body))
+                    sources.append((int(n.group(1)), n.group(2), body))
             answer = extractive_answer(m.group(2), sources)
         else:
             answer = (
@@ -369,10 +417,10 @@ def persona_principal(persona: str) -> identity.Principal:
 
 
 ALL = "*"  # the console's "All sources": every collection the caller may read
-# The console declines when the best passage's embedding similarity is below this, instead of quoting a
-# passage that shares one word with the question. Measured on the sample library: real questions score
-# 0.13 and up, off-topic ones ("What is our CEO's name?") 0.07. scripts/rag_eval.py applies the same rule
-# through answer(), so its decline questions measure what the console does.
+# The console declines in two places. Here, before anything is generated, when the best passage's embedding
+# similarity is below this floor: real questions score 0.13 and up, off-topic ones ("What is our CEO's name?")
+# 0.07. Then in the answerer (extractive_answer), when no retrieved document covers enough of the question's
+# words. scripts/rag_eval.py goes through answer(), so its decline questions measure what the console does.
 RELEVANCE_FLOOR = 0.09
 
 
@@ -426,7 +474,8 @@ async def retrieve_all(principal, question: str, top_k: int, config: dict):
 
 
 async def answer(question: str, sources: list) -> backends.ChatResult:
-    """The console's answer step: decline below the relevance floor, otherwise ask the backend."""
+    """The console's answer step: decline below the relevance floor, otherwise ask the backend (which declines
+    when no retrieved document answers the question)."""
     similarity = max((s.scores or {}).get("vector", 1.0) for s in sources)
     if similarity < RELEVANCE_FLOOR:  # nothing close enough to answer from: decline without generating
         return backends.ChatResult(NO_ANSWER, 0, len(NO_ANSWER.split()), "chatcmpl-demo", DEMO_MODEL)
@@ -1098,15 +1147,15 @@ class DemoEngine:
     async def run_rag_eval(self) -> dict:
         """scripts/rag_eval.py in this runtime (it uses its own throwaway database and restores settings).
 
-        The gated set only, which the console compares with the committed results; the held-out set is reported
-        from the committed file (re-running it here would take minutes in WebAssembly).
+        The gated set only, which the console compares with the committed results; the development and held-out
+        sets are reported from the committed file (re-running them here would take minutes in WebAssembly).
         """
         sys.modules.setdefault("demo", types.ModuleType("demo"))
         sys.modules.setdefault("demo.engine", sys.modules[__name__])
         from scripts import rag_eval
 
         started = time.perf_counter()
-        report = await rag_eval.evaluate_async(4, heldout=False)
+        report = await rag_eval.evaluate_async(4, full=False)
         backends.set_backend(DemoBackend())  # evaluate() clears the backend when it finishes
         problems = rag_eval.check(report, json.loads(rag_eval.THRESHOLDS.read_text()))
         return {"report": report, "problems": problems, "seconds": round(time.perf_counter() - started, 2)}

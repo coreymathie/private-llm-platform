@@ -1,10 +1,15 @@
 # Corey Mathie, 2026
 """
 Answer-quality evaluation over the console's own sample library: the Cypress Harbor Credit Union documents
-(demo/data/library.json, written by scripts/sample_library.py) and staff and member questions in two files:
-evals/golden/questions.jsonl, the gated set that evals/thresholds.json was measured on, and
-evals/golden/questions_heldout.jsonl, a larger held-out set written later and never used for tuning. Both are
-reported; quality thresholds apply to the gated set, and the ACL leak gate (0) to every question.
+(demo/data/library.json, written by scripts/sample_library.py) and staff and member questions in three files:
+
+  evals/golden/questions.jsonl      the gated set (59), the first set and the one evals/thresholds.json began with
+  evals/golden/questions_dev.jsonl  237 more; with the gated set, the development set (296) that the answerer's
+                                    citation and decline rules were designed on, question by question
+  evals/heldout/questions.jsonl     the held-out set, written by scripts/heldout_questions.py before those rules
+                                    changed and not used to design them
+
+Every set is reported and quality-gated (evals/thresholds.json), and the ACL leak gate (0) covers every question.
 
     python scripts/rag_eval.py                 # Markdown tables for every retrieval configuration
     python scripts/rag_eval.py --json          # machine-readable
@@ -20,9 +25,9 @@ not_in_library, out_of_scope or ambiguous.
 
 Runs offline and deterministically. Ingestion, collection and document access lists, access decisions and
 retrieval are the gateway's own code (gateway/rag.py, gateway/identity.py, gateway/retrieval.py); questions go
-through the console's "All sources" path (demo/engine.py: retrieve_all, then answer, which declines below the
-relevance floor), with the browser demo's embedder (hashed bag-of-words, not a neural model) and its extractive
-answerer (no LLM). The numbers measure that pipeline, not a real model's answers.
+through the console's "All sources" path (demo/engine.py: retrieve_all, then answer, which declines when no
+retrieved passage answers the question), with the browser demo's embedder (hashed bag-of-words, not a neural
+model) and its extractive answerer (no LLM). The numbers measure that pipeline, not a real model's answers.
 
 Metrics, per configuration (retrieval mode + reranker), at k passages:
   recall@1, recall@k   share of answerable questions whose expected document is in the top 1 / top k passages
@@ -31,6 +36,7 @@ Metrics, per configuration (retrieval mode + reranker), at k passages:
                        from the expected document
   answer_contains      share of answerable questions whose answer contains the expected phrase (case-insensitive)
   decline_accuracy     share of decline questions answered with the assistant's "I don't know" and no citation
+  false_declines       share of answerable questions answered "I don't know" (the cost of declining more)
   acl_leaks            passages retrieved (top 12) from a document the asking persona may not read, counted for
                        every question asked as every persona; must be 0. Readability comes from the catalog's
                        access lists, decided here independently of the gateway's own access code.
@@ -52,12 +58,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 GOLDEN = ROOT / "evals" / "golden"
 QUESTIONS = GOLDEN / "questions.jsonl"
-HELDOUT = GOLDEN / "questions_heldout.jsonl"
+DEV = GOLDEN / "questions_dev.jsonl"
+HELDOUT = ROOT / "evals" / "heldout" / "questions.jsonl"
 LIBRARY = ROOT / "demo" / "data" / "library.json"
 THRESHOLDS = ROOT / "evals" / "thresholds.json"
 CONSOLE_DATA = ROOT / "demo" / "data" / "rag_eval.json"
 CONFIGS = [("vector", "none"), ("bm25", "none"), ("hybrid", "none"), ("hybrid", "lexical")]
 LEAK_TOP_K = 12
+SETS = ("development", "heldout")  # report sections beside "results" (the gated set)
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -67,14 +75,16 @@ def _questions(path: Path, which: str) -> list[dict]:
     return [{**json.loads(line), "set": which} for line in path.read_text().splitlines() if line.strip()]
 
 
-def load_golden(heldout: bool = False) -> tuple[dict, dict[str, str], list[dict]]:
-    """The library catalog, every document's text by file name, and the gated questions (plus the held-out set).
+def load_golden(full: bool = False) -> tuple[dict, dict[str, str], list[dict]]:
+    """The library catalog, every document's text by file name, and the gated questions (plus the others).
 
-    Each question carries "set": "gated" or "heldout".
+    Each question carries "set": "gated", "dev" or "heldout". full=False loads the gated set only.
     """
     catalog = json.loads(LIBRARY.read_text())
     texts = {d["file"]: (ROOT / "demo" / d["path"]).read_text() for d in catalog["documents"]}
-    questions = _questions(QUESTIONS, "gated") + (_questions(HELDOUT, "heldout") if heldout else [])
+    questions = _questions(QUESTIONS, "gated")
+    if full:
+        questions += _questions(DEV, "dev") + _questions(HELDOUT, "heldout")
     return catalog, texts, questions
 
 
@@ -119,6 +129,7 @@ def _aggregate(k: int, mode: str, reranker: str, outcomes: list[dict]) -> dict:
         "citation_accuracy": round(sum(o["cite_ok"] for o in answers) / n_ans, 4),
         "answer_contains": round(sum(o["has"] for o in answers) / n_ans, 4),
         "decline_accuracy": round(sum(o["ok"] for o in declines) / n_dec, 4),
+        "false_declines": round(sum(o["declined"] for o in answers) / n_ans, 4),
         "acl_leaks": sum(o["leaks"] for o in outcomes),
         "acl_leak_checks": sum(o["checks"] for o in outcomes),
         "restricted_probes": sum(o["probes"] for o in outcomes),
@@ -135,11 +146,11 @@ def _counts(questions: list[dict]) -> dict:
     }
 
 
-async def _evaluate(k: int, configs: list[tuple[str, str]], heldout: bool) -> dict:
+async def _evaluate(k: int, configs: list[tuple[str, str]], full: bool) -> dict:
     from demo import engine
     from gateway import rag, store
 
-    catalog, texts, questions = load_golden(heldout)
+    catalog, texts, questions = load_golden(full)
     store.init_db()
     rag.init_rag()
     for d in catalog["documents"]:
@@ -153,7 +164,8 @@ async def _evaluate(k: int, configs: list[tuple[str, str]], heldout: bool) -> di
     allowed = {p: readable(catalog, principals[p]) for p in personas}
     restricted = [d["file"] for d in catalog["documents"] if d["acl"]]
 
-    results, full = {}, {}
+    results: dict = {}
+    sections: dict[str, dict] = {name: {} for name in SETS}
     for mode, reranker in configs:
         config = {"mode": mode, "reranker": reranker}
         outcomes = []
@@ -167,8 +179,15 @@ async def _evaluate(k: int, configs: list[tuple[str, str]], heldout: bool) -> di
                 o["rank"] = titles.index(q["doc"]) + 1 if q["doc"] in titles else 0
                 o["cite_ok"] = bool(cited) and cited == [q["doc"]]
                 o["has"] = q["answer_contains"].lower() in reply.lower()
+                o["declined"] = reply == engine.NO_ANSWER
                 if not (o["rank"] == 1 and o["cite_ok"] and o["has"]):
-                    o["failure"] = {"id": q["id"], "rank": o["rank"], "cited": cited, "contains": o["has"]}
+                    o["failure"] = {
+                        "id": q["id"],
+                        "rank": o["rank"],
+                        "cited": cited,
+                        "contains": o["has"],
+                        "declined": o["declined"],
+                    }
             else:
                 o["ok"] = reply == engine.NO_ANSWER and not cited
                 if not o["ok"]:
@@ -183,8 +202,10 @@ async def _evaluate(k: int, configs: list[tuple[str, str]], heldout: bool) -> di
             outcomes.append(o)
         name = f"{mode}+{reranker}"
         results[name] = _aggregate(k, mode, reranker, [o for o in outcomes if o["set"] == "gated"])
-        if heldout:
-            full[name] = _aggregate(k, mode, reranker, outcomes)
+        if full:
+            dev = [o for o in outcomes if o["set"] in ("gated", "dev")]
+            sections["development"][name] = _aggregate(k, mode, reranker, dev)
+            sections["heldout"][name] = _aggregate(k, mode, reranker, [o for o in outcomes if o["set"] == "heldout"])
     gated = [q for q in questions if q["set"] == "gated"]
     report = {
         "k": k,
@@ -194,23 +215,27 @@ async def _evaluate(k: int, configs: list[tuple[str, str]], heldout: bool) -> di
         "restricted_documents": len(restricted),
         "personas": personas,
         "embedder": "demo hashed bag-of-words (512-d), not a neural model",
-        "answerer": "demo extractive (no LLM), with the console's relevance floor",
+        "answerer": "demo extractive (no LLM), declining when no retrieved passage answers the question",
         "results": results,
     }
-    if heldout:  # the gated set plus the held-out set: reported, leak-gated, not quality-gated
-        report["full"] = {**_counts(questions), "heldout": len(questions) - len(gated), "results": full}
+    if full:  # the development set (gated + dev) and the held-out set, each gated by evals/thresholds.json
+        report["development"] = {
+            **_counts([q for q in questions if q["set"] in ("gated", "dev")]),
+            "results": sections["development"],
+        }
+        report["heldout"] = {**_counts([q for q in questions if q["set"] == "heldout"]), "results": sections["heldout"]}
     return report
 
 
-def evaluate(k: int = 4, configs: list[tuple[str, str]] | None = None, heldout: bool = True) -> dict:
+def evaluate(k: int = 4, configs: list[tuple[str, str]] | None = None, full: bool = True) -> dict:
     """Run the eval in a throwaway database; restores the gateway settings and backend afterwards.
 
-    heldout=False evaluates the gated set only (the browser re-run, which compares it with the committed results).
+    full=False evaluates the gated set only (the browser re-run, which compares it with the committed results).
     """
-    return asyncio.run(evaluate_async(k, configs, heldout))
+    return asyncio.run(evaluate_async(k, configs, full))
 
 
-async def evaluate_async(k: int = 4, configs: list[tuple[str, str]] | None = None, heldout: bool = True) -> dict:
+async def evaluate_async(k: int = 4, configs: list[tuple[str, str]] | None = None, full: bool = True) -> dict:
     """evaluate() for callers already inside an event loop (the console runs it in the browser)."""
     from demo.engine import DEMO_EMBED_MODEL, DemoBackend
     from gateway import backends
@@ -224,7 +249,7 @@ async def evaluate_async(k: int = 4, configs: list[tuple[str, str]] | None = Non
         settings.GATEWAY_RRF_K = 60
         backends.set_backend(DemoBackend())
         try:
-            return await _evaluate(k, configs or CONFIGS, heldout)
+            return await _evaluate(k, configs or CONFIGS, full)
         finally:
             for name, value in saved.items():
                 setattr(settings, name, value)
@@ -232,34 +257,44 @@ async def evaluate_async(k: int = 4, configs: list[tuple[str, str]] | None = Non
 
 
 def check(report: dict, thresholds: dict) -> list[str]:
-    """Gated metrics below their minimum (or leaks above zero)."""
+    """Gated metrics below their minimum (or leaks above zero), for the gated set and each other set reported."""
     problems = []
-    for config, minimums in thresholds["configs"].items():
-        got = report["results"].get(config)
-        if got is None:
-            problems.append(f"{config}: not evaluated")
-            continue
-        for metric, minimum in minimums.items():
-            if got[metric] < minimum:
-                problems.append(f"{config}: {metric} {got[metric]} < {minimum}")
-    leak_results = report.get("full", report)["results"]  # every question, held-out ones included
-    for config, got in leak_results.items():
-        if got["acl_leaks"] > thresholds.get("max_acl_leaks", 0):
-            problems.append(f"{config}: {got['acl_leaks']} restricted passages leaked")
+    gates = [("", report.get("results", {}), thresholds.get("configs", {}))]
+    for section in SETS:
+        if section in thresholds and section in report:
+            gates.append((f"{section} ", report[section]["results"], thresholds[section]["configs"]))
+    for label, results, configs in gates:
+        for config, minimums in configs.items():
+            got = results.get(config)
+            if got is None:
+                problems.append(f"{label}{config}: not evaluated")
+                continue
+            for metric, minimum in minimums.items():
+                if got[metric] < minimum:
+                    problems.append(f"{label}{config}: {metric} {got[metric]} < {minimum}")
+    # every question, in every set: the development set contains the gated one, so count it once
+    leak_sets = [report[s]["results"] for s in SETS if s in report] or [report["results"]]
+    leaks: dict[str, int] = {}
+    for results in leak_sets:
+        for config, got in results.items():
+            leaks[config] = leaks.get(config, 0) + got["acl_leaks"]
+    for config, n in leaks.items():
+        if n > thresholds.get("max_acl_leaks", 0):
+            problems.append(f"{config}: {n} restricted passages leaked")
     return problems
 
 
 def metrics_table(results: dict, k: int) -> str:
     lines = [
         f"| Configuration | recall@1 | recall@{k} | MRR | citation accuracy | answer contains "
-        "| decline accuracy | ACL leaks |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| decline accuracy | false declines | ACL leaks |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for name, r in results.items():
         lines.append(
             f"| `{name}` | {r['recall@1']:.3f} | {r[f'recall@{k}']:.3f} | {r['mrr']:.3f} | "
             f"{r['citation_accuracy']:.3f} | {r['answer_contains']:.3f} | {r['decline_accuracy']:.3f} | "
-            f"{r['acl_leaks']} |"
+            f"{r['false_declines']:.3f} | {r['acl_leaks']} |"
         )
     return "\n".join(lines)
 
@@ -296,19 +331,24 @@ def markdown(report: dict) -> str:
         "",
         leak_line(report["results"]),
     ]
-    if "full" in report:
-        f = report["full"]
+    titles = {
+        "development": "Development set (gated + evals/golden/questions_dev.jsonl)",
+        "heldout": "Held-out set (evals/heldout/questions.jsonl)",
+    }
+    for section in SETS:
+        if section not in report:
+            continue
+        f = report[section]
         lines += [
             "",
-            f"Full set (gated + {f['heldout']} held out): {f['questions']} questions ({f['answerable']} answerable, "
-            f"{f['declines']} to decline). Quality thresholds apply to the gated set only; the leak gate to every "
-            "question.",
+            f"{titles[section]}: {f['questions']} questions ({f['answerable']} answerable, {f['declines']} to "
+            "decline).",
             "",
             metrics_table(f["results"], k),
             "",
             leak_line(f["results"]),
             "",
-            "Decline questions declined correctly, full set, by category:",
+            "Decline questions declined correctly, by category:",
             "",
             declines_table(f["results"]),
         ]
@@ -320,7 +360,7 @@ def console_data(report: dict) -> dict:
 
     No timestamp, so the committed file only changes when results change (a test compares it to a fresh run).
     """
-    catalog, _texts, questions = load_golden(heldout="full" in report)
+    catalog, _texts, questions = load_golden(full="heldout" in report)
     thresholds = json.loads(THRESHOLDS.read_text())
     docs = [f"demo/{d['path']}" for d in catalog["documents"]]
     return {
@@ -340,7 +380,7 @@ def console_data(report: dict) -> dict:
             for q in questions
         },
         "golden_files": ["demo/data/library.json", *docs, "evals/golden/questions.jsonl", "evals/thresholds.json"],
-        "heldout_files": ["evals/golden/questions_heldout.jsonl"],
+        "other_files": ["evals/golden/questions_dev.jsonl", "evals/heldout/questions.jsonl"],
     }
 
 

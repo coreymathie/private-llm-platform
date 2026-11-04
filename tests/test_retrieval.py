@@ -92,27 +92,39 @@ def test_ask_uses_the_configured_mode_and_reports_it(client, monkeypatch, mode):
 
 @pytest.fixture(scope="module")
 def eval_report():
-    return rag_eval.evaluate()  # gated and held-out sets, about 50 s: shared by the tests below
+    return rag_eval.evaluate()  # gated, development and held-out sets, about 95 s: shared by the tests below
 
 
 def test_rag_eval_meets_thresholds_and_has_no_acl_leaks(eval_report):
     report = eval_report
     assert report["questions"] >= 40 and report["restricted_documents"] == 3 and report["declines"] >= 5
-    assert rag_eval.check(report, json.loads(rag_eval.THRESHOLDS.read_text())) == []
+    thresholds = json.loads(rag_eval.THRESHOLDS.read_text())
+    assert set(thresholds) >= {"configs", "development", "heldout"}  # every set is quality-gated
+    assert rag_eval.check(report, thresholds) == []
     assert all(r["acl_leaks"] == 0 for r in report["results"].values())
-    full = report["full"]  # gated + held out: no quality thresholds, but the leak gate applies to every question
-    assert full["questions"] >= 200 and full["questions"] == report["questions"] + full["heldout"]
-    for r in full["results"].values():
-        assert r["acl_leaks"] == 0 and r["acl_leak_checks"] == full["questions"] * len(report["personas"])
-        assert r["restricted_probes"] >= 100
+    dev, held = report["development"], report["heldout"]
+    assert dev["questions"] >= 200 and held["questions"] >= 150
+    for section in (dev, held):  # the leak gate applies to every question in every set
+        for r in section["results"].values():
+            assert r["acl_leaks"] == 0 and r["acl_leak_checks"] == section["questions"] * len(report["personas"])
+            assert r["restricted_probes"] >= 80
     assert settings.GATEWAY_RETRIEVAL_MODE == "hybrid"  # settings restored after the run
 
 
-def test_leak_gate_covers_the_held_out_questions():
+def test_leak_gate_covers_the_development_and_held_out_questions():
     clean = {"hybrid+none": {"recall@1": 1.0, "acl_leaks": 0}}
-    report = {"results": clean, "full": {"results": {"hybrid+none": {"recall@1": 0.1, "acl_leaks": 1}}}}
+    report = {
+        "results": clean,
+        "development": {"results": {"hybrid+none": {"recall@1": 0.9, "acl_leaks": 0}}},
+        "heldout": {"results": {"hybrid+none": {"recall@1": 0.1, "acl_leaks": 1}}},
+    }
     thresholds = {"max_acl_leaks": 0, "configs": {"hybrid+none": {"recall@1": 0.9}}}
     assert rag_eval.check(report, thresholds) == ["hybrid+none: 1 restricted passages leaked"]
+    thresholds["heldout"] = {"configs": {"hybrid+none": {"recall@1": 0.2}}}
+    assert rag_eval.check(report, thresholds) == [
+        "heldout hybrid+none: recall@1 0.1 < 0.2",
+        "hybrid+none: 1 restricted passages leaked",
+    ]
 
 
 def test_rag_eval_gate_fails_on_regressions_and_leaks():
@@ -133,8 +145,8 @@ DECLINE_CATEGORIES = {"restricted_probe", "kiosk_internal", "not_in_library", "o
 def test_golden_set_is_well_formed_and_covers_the_library():
     from demo.engine import PERSONAS, persona_principal
 
-    catalog, texts, questions = rag_eval.load_golden(heldout=True)
-    assert len({q["id"] for q in questions}) == len(questions)  # ids unique across the gated and held-out files
+    catalog, texts, questions = rag_eval.load_golden(full=True)
+    assert len({q["id"] for q in questions}) == len(questions)  # ids unique across the three files
     assert len({(q["persona"], q["question"]) for q in questions}) == len(questions)
     restricted = {d["file"] for d in catalog["documents"] if d["acl"]}
     collection = {d["file"]: d["collection"] for d in catalog["documents"]}
@@ -166,6 +178,25 @@ def test_golden_set_is_well_formed_and_covers_the_library():
         assert probers == blocked, (doc, probers, blocked)
 
 
+def test_held_out_set_is_generated_separately_and_covers_every_document():
+    """evals/heldout/questions.jsonl: its own generator (--check in CI), new questions, every document and category."""
+    from demo.engine import PERSONAS, persona_principal
+    from scripts import heldout_questions
+
+    assert rag_eval.HELDOUT.read_text() == heldout_questions.render(heldout_questions.build())  # up to date
+    catalog, _texts, questions = rag_eval.load_golden(full=True)
+    held = [q for q in questions if q["set"] == "heldout"]
+    dev_questions = {q["question"] for q in questions if q["set"] != "heldout"}
+    assert len(held) >= 150 and not {q["question"] for q in held} & dev_questions  # nothing reused
+    assert {q["doc"] for q in held if q["doc"]} == {d["file"] for d in catalog["documents"]}
+    assert {q["category"] for q in held if not q["doc"]} == DECLINE_CATEGORIES
+    restricted = {d["file"] for d in catalog["documents"] if d["acl"]}
+    for doc in restricted:  # every persona not cleared for a restricted document probes it in this set too
+        probers = {q["persona"] for q in held if q.get("probe") == doc}
+        blocked = {p for p in PERSONAS if p != "admin" and doc not in rag_eval.readable(catalog, persona_principal(p))}
+        assert probers == blocked, (doc, probers, blocked)
+
+
 def test_eval_access_oracle_agrees_with_the_personas():
     from demo.engine import persona_principal
 
@@ -178,11 +209,12 @@ def test_eval_access_oracle_agrees_with_the_personas():
 
 def test_published_eval_numbers_match_a_fresh_run(eval_report):
     """The README, docs/benchmarks.md, evals/README.md and ADR 0006 quote the eval tables; they must match a fresh run
-    exactly (the gated table everywhere; the full-set tables wherever the larger set is published)."""
+    exactly (the gated table everywhere; the development and held-out tables wherever those sets are published)."""
     k = eval_report["k"]
     gated = rag_eval.metrics_table(eval_report["results"], k)
-    full = eval_report["full"]["results"]
-    tables = [rag_eval.metrics_table(full, k), rag_eval.leak_line(full), rag_eval.leak_line(eval_report["results"])]
+    dev, held = eval_report["development"]["results"], eval_report["heldout"]["results"]
+    tables = [rag_eval.metrics_table(dev, k), rag_eval.metrics_table(held, k), rag_eval.leak_line(dev)]
+    tables += [rag_eval.leak_line(held), rag_eval.leak_line(eval_report["results"])]
     root = rag_eval.ROOT
     adr = "docs/adr/0006-hybrid-retrieval-and-rag-evals.md"
     for doc in ("docs/benchmarks.md", adr, "README.md", "evals/README.md"):
@@ -190,4 +222,5 @@ def test_published_eval_numbers_match_a_fresh_run(eval_report):
     for doc in ("docs/benchmarks.md", "README.md", "evals/README.md"):
         for table in tables:
             assert table in (root / doc).read_text(), (doc, table)
-    assert rag_eval.declines_table(full) in (root / "evals/README.md").read_text()
+    for section in (dev, held):
+        assert rag_eval.declines_table(section) in (root / "evals/README.md").read_text()

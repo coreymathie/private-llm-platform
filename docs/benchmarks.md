@@ -105,50 +105,73 @@ python scripts/loadtest.py --url http://127.0.0.1:8001 --key x --model mock-mode
 
 ## Retrieval quality (measured, golden set)
 
-`python scripts/rag_eval.py` (runs in about 47 s on the build host; CI runs it with `--check`). The questions
+`python scripts/rag_eval.py` (runs in about 95 s on the build host; CI runs it with `--check`). The questions
 are asked against the console's own Cypress Harbor library through the console's "All sources" path, each as
 the persona who would ask it, and every question is also retrieved as every persona for the ACL leak check.
 Same caveats as [ADR 0006](adr/0006-hybrid-retrieval-and-rag-evals.md): demo hashed bag-of-words embedder (not a
-neural model), extractive answerer (no LLM) with a fixed relevance floor, and a library and golden set written
-by one author. A regression baseline for the pipeline, not a statement about answer quality in production.
-Method, coverage and thresholds: [evals/README.md](../evals/README.md).
+neural model), extractive answerer (no LLM) with a relevance floor and a coverage check, and a library and
+question sets written by one author. A regression baseline for the pipeline, not a statement about answer
+quality in production. Method, coverage, thresholds and the before tables: [evals/README.md](../evals/README.md).
 
-**Before: the gated set** (`evals/golden/questions.jsonl`, the set `evals/thresholds.json` was measured on): 59
-questions (50 answerable, 9 to decline) over the Cypress Harbor sample library: 59 documents in 6 collections (3
-restricted), asked as 5 personas, k=4.
+Three question sets: the **gated set** (`evals/golden/questions.jsonl`, 59 questions), the **development set**
+(the gated set plus `evals/golden/questions_dev.jsonl`, 296 questions, on which the answerer's citation and
+decline rules were designed) and the **held-out set** (`evals/heldout/questions.jsonl`, 183 questions written
+by `scripts/heldout_questions.py` before that change and not used to design it). Each is gated by
+`evals/thresholds.json`.
 
-| Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | ACL leaks |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| `vector+none` | 0.800 | 0.960 | 0.872 | 0.860 | 0.840 | 0.222 | 0 |
-| `bm25+none` | 1.000 | 1.000 | 1.000 | 0.900 | 0.860 | 0.111 | 0 |
-| `hybrid+none` | 0.880 | 1.000 | 0.940 | 0.920 | 0.840 | 0.222 | 0 |
-| `hybrid+lexical` | 0.960 | 1.000 | 0.975 | 0.880 | 0.860 | 0.222 | 0 |
+**Before and after the answerer change**, hybrid retrieval (retrieval itself did not change, so recall and MRR
+are the same before and after):
+
+| Set (hybrid) | citation accuracy | answer contains | decline accuracy | false declines |
+|---|---:|---:|---:|---:|
+| Gated (59) | 0.920 → 0.940 | 0.840 → 0.880 | 0.222 → 0.333 | 0.020 → 0.040 |
+| Development (296) | 0.698 → 0.838 | 0.808 → 0.791 | 0.246 → 0.656 | 0.009 → 0.068 |
+| Held-out (183) | 0.524 → 0.565 | 0.621 → 0.484 | 0.254 → 0.695 | 0.040 → 0.290 |
+
+**After**, every configuration. Gated set: 59 questions (50 answerable, 9 to decline) over the Cypress Harbor
+sample library: 59 documents in 6 collections (3 restricted), asked as 5 personas, k=4.
+
+| Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | false declines | ACL leaks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `vector+none` | 0.800 | 0.960 | 0.872 | 0.940 | 0.880 | 0.444 | 0.040 | 0 |
+| `bm25+none` | 1.000 | 1.000 | 1.000 | 0.920 | 0.860 | 0.333 | 0.040 | 0 |
+| `hybrid+none` | 0.880 | 1.000 | 0.940 | 0.940 | 0.880 | 0.333 | 0.040 | 0 |
+| `hybrid+lexical` | 0.960 | 1.000 | 0.975 | 0.920 | 0.860 | 0.333 | 0.040 | 0 |
 
 ACL leak checks per configuration: 295 retrievals (every question as every persona, top 12), 28 of them a restricted document's question asked by a persona not cleared for it.
 
-**After: the gated set plus the held-out set** (`evals/golden/questions_heldout.jsonl`, 237 questions written later and not
-used for tuning): 296 questions (235 answerable, at least 3 per document; 61 to decline: restricted probes,
-kiosk questions about staff procedures, questions nothing answers, off-topic and ambiguous questions). No
-quality thresholds; the leak gate applies.
+Development set: 296 questions (235 answerable, at least 3 per document; 61 to decline).
 
-| Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | ACL leaks |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| `vector+none` | 0.774 | 0.949 | 0.853 | 0.698 | 0.808 | 0.246 | 0 |
-| `bm25+none` | 0.906 | 0.979 | 0.938 | 0.702 | 0.808 | 0.131 | 0 |
-| `hybrid+none` | 0.838 | 0.983 | 0.903 | 0.698 | 0.808 | 0.246 | 0 |
-| `hybrid+lexical` | 0.877 | 0.970 | 0.916 | 0.689 | 0.804 | 0.295 | 0 |
+| Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | false declines | ACL leaks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `vector+none` | 0.774 | 0.949 | 0.853 | 0.834 | 0.783 | 0.689 | 0.077 | 0 |
+| `bm25+none` | 0.906 | 0.979 | 0.938 | 0.834 | 0.774 | 0.607 | 0.068 | 0 |
+| `hybrid+none` | 0.838 | 0.983 | 0.903 | 0.838 | 0.791 | 0.656 | 0.068 | 0 |
+| `hybrid+lexical` | 0.877 | 0.970 | 0.916 | 0.813 | 0.753 | 0.672 | 0.072 | 0 |
 
 ACL leak checks per configuration: 1480 retrievals (every question as every persona, top 12), 144 of them a restricted document's question asked by a persona not cleared for it.
 
-The gated numbers are unchanged. On the larger set, citation accuracy falls to 0.698 (hybrid), mostly because
-the extractive answerer adds a sentence from a second document; per-category decline results and the failure
-analysis are in [evals/README.md](../evals/README.md#results).
+Held-out set: 183 questions (124 answerable, every document at least once; 59 to decline).
 
-Decline accuracy is the share of the decline questions answered with "I don't know" and no citation. It is low
-because the console declines only below a fixed vector-similarity floor, and bm25-only retrieval has no vector
-score at all. Those answers come from documents the asker may read (0 leaks); they are unhelpful, not unsafe.
-The previous golden set (12 generic documents, 43 questions for an unrelated fictional company) is no longer
-published; it remains in git history.
+| Configuration | recall@1 | recall@4 | MRR | citation accuracy | answer contains | decline accuracy | false declines | ACL leaks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `vector+none` | 0.581 | 0.823 | 0.677 | 0.565 | 0.484 | 0.695 | 0.331 | 0 |
+| `bm25+none` | 0.774 | 0.935 | 0.845 | 0.581 | 0.492 | 0.678 | 0.282 | 0 |
+| `hybrid+none` | 0.726 | 0.911 | 0.802 | 0.565 | 0.484 | 0.695 | 0.290 | 0 |
+| `hybrid+lexical` | 0.734 | 0.895 | 0.804 | 0.565 | 0.476 | 0.678 | 0.290 | 0 |
+
+ACL leak checks per configuration: 915 retrievals (every question as every persona, top 12), 84 of them a restricted document's question asked by a persona not cleared for it.
+
+Decline accuracy is the share of the decline questions answered with "I don't know" and no citation; false
+declines are the share of answerable questions answered that way. The answerer now declines when no retrieved
+document contains enough of the question's words, and quotes and cites only one document. On the development
+set that lifts citation accuracy from 0.698 to 0.838 and decline accuracy from 0.246 to 0.656 (hybrid) for a
+small loss in answer-contains (0.808 to 0.791). The held-out set confirms the decline gain (0.254 to 0.695) but
+shows a larger cost than the development set: false declines rise from 0.040 to 0.290 and answer-contains falls
+from 0.621 to 0.484. That gap is the estimate of how much the rule was fitted to the questions it was designed
+on; [evals/README.md](../evals/README.md#reading-the-numbers) breaks it down. No answer comes from a document
+the asker may not read (0 leaks). The previous golden set (12 generic documents, 43 questions for an unrelated
+fictional company) is no longer published; it remains in git history.
 
 ## Storage and encryption cost (measured)
 

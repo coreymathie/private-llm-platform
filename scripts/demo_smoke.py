@@ -572,14 +572,19 @@ def demo(run: Run, p, port: int, pyodide_dir: Path | None) -> None:
     goto(page, "evals")
     expect(page.locator("#gate")).to_have_text("Pass")
     assert page.locator("#scorecard tbody tr").count() == 4
-    committed = json.loads((ROOT / "demo" / "data" / "rag_eval.json").read_text())["report"]["full"]
-    expect(page.locator("#fullSet h2")).to_contain_text(f"{committed['questions']} questions")
-    assert page.locator("#fullScorecard tbody tr").count() == 4
+    committed = json.loads((ROOT / "demo" / "data" / "rag_eval.json").read_text())["report"]
+    for key, card in (("development", "devSet"), ("heldout", "heldoutSet")):
+        expect(page.locator(f"#{card} h2")).to_contain_text(f"{committed[key]['questions']} questions")
+        assert page.locator(f"#{card}Scorecard tbody tr").count() == 4
+        assert page.locator(f"#{card}Scorecard .pill.bad").count() == 0  # every set meets its thresholds
     page.click('#scorecard tr[data-config="bm25+none"]')
     expect(page.locator("#view")).to_contain_text("not answered perfectly · bm25+none")
     page.click("#runEval")
     expect(page.locator("#evalMatch")).to_contain_text("Identical", timeout=180_000)
-    run.ok("demo evals: gate passes; held-out set shown; the gated re-run in the browser matches the committed results")
+    run.ok(
+        "demo evals: gate passes; development and held-out sets shown against their thresholds; "
+        "the gated re-run in the browser matches the committed results"
+    )
     run.shot(page, "demo-evals")
 
     # 9. Settings

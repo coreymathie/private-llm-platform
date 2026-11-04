@@ -100,10 +100,13 @@ dark themes follow the system and can be switched in the header.
 ## Asking across every readable collection
 
 *All sources I can read* (the default) searches every collection the person may read. The access decision
-runs per collection before any passage is scored; passages are then ranked together. An answer quotes only
-sentences from its best-matching document. A question that nothing in the library answers well receives
-"I couldn't find that in the documents you can access" instead of an unrelated quote. This is a relevance
-floor on vector similarity; the eval applies the same rule and reports how often it declines when it should.
+runs per collection before any passage is scored; passages are then ranked together. In demo mode an answer
+quotes and cites only one document: the retrieved document that contains the most of the question's words. A
+question that nothing in the library answers well receives "I couldn't find that in the documents you can
+access" instead of an unrelated quote: in demo mode when the best passage's vector similarity is below a floor,
+or when no retrieved document contains at least two of the question's content words and more than a third of
+them. The eval goes through the same path and reports how often it declines when it should, and how often it
+declines a question it could have answered ([evals/README.md](../evals/README.md)).
 
 ## Navigation
 
@@ -125,7 +128,7 @@ and a collapsible sidebar. A five-step guided tour is offered on the first visit
 | Audit log | The hash-chained log with readable event names, filters, search and paging; each row opens a decision timeline (sign-in, access decision, retrieval, sources, answer, hashes). "Log intact" check; demo mode adds a tamper-detection test |
 | Access policy | The policy in effect, in plain language, then the runtime policy as JSON, validated with the gateway's own types and `identity.check_role`, applied and audited, with a "try a change" scenario before and after |
 | Models | Backend health, served models, off/warn/enforce policy; the technical view adds digests, lock-file verification and validation, and ML-BOM model components |
-| Answer quality | The `scripts/rag_eval.py` scorecard per configuration against `evals/thresholds.json`, measured on the Cypress Harbor library itself with 59 gated questions, plus the 296-question set with the held-out questions (no thresholds), asked as the five people (including questions to decline), and the questions not answered perfectly with who asked them; demo mode re-runs the gated set in the browser and compares |
+| Answer quality | The `scripts/rag_eval.py` scorecard per configuration against `evals/thresholds.json`, measured on the Cypress Harbor library itself with 59 gated questions, plus the 296-question development set and the 183-question held-out set, each against its own thresholds, asked as the five people (including questions to decline), with the share of answerable questions declined, and the questions not answered perfectly with who asked them; demo mode re-runs the gated set in the browser and compares |
 | Settings | Mode, credential (live), modules running in the tab (technical view), and what is simulated |
 
 ## Running the console against the gateway

@@ -811,7 +811,7 @@ const METRICS = [["recall@1", "recall@1"], ["recall@4", "recall@4"], ["mrr", "MR
 
 async function evals(view, S) {
   const A = S.A;
-  view.innerHTML = head("Answer quality", "How often the assistant finds the right document and cites only it, measured on a fixed test set and checked on every change before it ships.<span class=\"tech-only\"> Quality gate from <code>scripts/rag_eval.py</code> over the sample library and <code>evals/golden/questions.jsonl</code>, the same numbers CI enforces against <code>evals/thresholds.json</code>.</span>",
+  view.innerHTML = head("Answer quality", "How often the assistant finds the right document and cites only it, measured on a fixed test set and checked on every change before it ships.<span class=\"tech-only\"> Quality gate from <code>scripts/rag_eval.py</code> over the sample library and three question sets (<code>evals/golden/questions.jsonl</code>, <code>evals/golden/questions_dev.jsonl</code>, <code>evals/heldout/questions.jsonl</code>), the same numbers CI enforces against <code>evals/thresholds.json</code>.</span>",
     A.caps.runEval ? `<button class="primary" id="runEval">Re-run in your browser</button>` : "") + `<div id="ev">${loading()}</div>`;
   let data;
   try { data = await A.evals(); } catch (e) { $("#ev", view).innerHTML = errorBox({ detail: String(e.message || e) }); return; }
@@ -820,12 +820,20 @@ async function evals(view, S) {
   if (!configs.includes(S.evalConfig)) S.evalConfig = "hybrid+none";
   const r = rep.results[S.evalConfig];
   const gatePass = data.problems.length === 0;
-  const full = rep.full || null;  // gated + held-out questions: reported, leak-gated, no quality thresholds
-  const leakResults = full ? full.results : rep.results;
-  const leaks = configs.reduce((s, k) => s + leakResults[k].acl_leaks, 0);
-  const checks = configs.reduce((s, k) => s + leakResults[k].acl_leak_checks, 0);
+  // The development set (gated + the questions the answer rules were designed on) and the held-out set (written
+  // before that change, not used to design it): each quality-gated, and together they hold every question.
+  const sets = [["development", "devSet"], ["heldout", "heldoutSet"]].filter(([key]) => rep[key]);
+  const leakSets = sets.length ? sets.map(([key]) => rep[key].results) : [rep.results];
+  const leaks = leakSets.reduce((s, res) => s + configs.reduce((t, k) => t + res[k].acl_leaks, 0), 0);
+  const checks = leakSets.reduce((s, res) => s + configs.reduce((t, k) => t + res[k].acl_leak_checks, 0), 0);
+  const setCopy = {
+    development: (f) => `The ${fmt(rep.questions)} gated questions plus ${fmt(f.questions - rep.questions)} more, ${fmt(f.answerable)} answerable and ${fmt(f.declines)} to decline. The answerer's citation and decline rules were designed on these questions, so they flatter it.`,
+    heldout: (f) => `${fmt(f.answerable)} answerable and ${fmt(f.declines)} to decline, written with new phrasings before the citation and decline rules changed and not used to design them. The gap to the development set is the honest estimate of overfitting.`,
+  };
+  const setTitle = { development: "Development set", heldout: "Held-out set" };
+  const pill = (v, min) => min !== undefined ? ` <span class="pill ${v >= min ? "ok" : "bad"}" title="threshold ${min}">${v >= min ? "≥" : "<"} ${min}</span>` : "";
   $("#ev", view).innerHTML = `
-  <div class="banner info"><strong>Measured, not simulated.</strong> ${rep.questions} questions asked by the people on the Chat screen against the Cypress Harbor library itself: ${rep.documents} documents in ${rep.collections} collections, ${rep.restricted_documents} of them restricted. ${rep.answerable} have an answer in a document the asker may read; ${rep.declines} should be declined, because nothing answers them or the answer is in a document the asker is not cleared for. The questions are paraphrased the way staff ask and were written after the library, which was not tuned to them.${full ? ` A larger held-out set of ${full.heldout} more questions, written later and never used for tuning, is reported below without quality thresholds.` : ""} It measures finding, citing and declining; it isn't a test of a large language model's writing.<span class="tech-only"> k=${rep.k}. Embedder: ${esc(rep.embedder)}. Answers: ${esc(rep.answerer)}. Produced by <code>${esc(data.generated_by)}</code>.</span></div>
+  <div class="banner info"><strong>Measured, not simulated.</strong> ${rep.questions} questions asked by the people on the Chat screen against the Cypress Harbor library itself: ${rep.documents} documents in ${rep.collections} collections, ${rep.restricted_documents} of them restricted. ${rep.answerable} have an answer in a document the asker may read; ${rep.declines} should be declined, because nothing answers them or the answer is in a document the asker is not cleared for. The questions are paraphrased the way staff ask and were written after the library, which was not tuned to them.${rep.heldout ? ` Two larger sets are reported below, each with its own thresholds: the development set (${fmt(rep.development.questions)} questions) and a held-out set (${fmt(rep.heldout.questions)}) that the answer rules were not designed on.` : ""} It measures finding, citing and declining; it isn't a test of a large language model's writing.<span class="tech-only"> k=${rep.k}. Embedder: ${esc(rep.embedder)}. Answers: ${esc(rep.answerer)}. Produced by <code>${esc(data.generated_by)}</code>.</span></div>
   <div class="grid kpis four" style="margin-top:16px">
     <div class="card kpi"><div class="label">Release check</div><div translate="no" class="value ${gatePass ? "ok" : "bad"}" id="gate">${gatePass ? "Pass" : "Fail"}</div><div class="sub" translate="no">${gatePass ? "every gated metric meets its threshold" : esc(data.problems.join("; "))}</div></div>
     <div class="card kpi"><div class="label">ACL leaks</div><div translate="no" class="value ${leaks ? "bad" : "ok"}">${leaks}</div><div class="sub" translate="no">times a restricted document reached someone not cleared for it (must be 0), in ${fmt(checks)} checks across the ${configs.length} search methods</div></div>
@@ -834,21 +842,21 @@ async function evals(view, S) {
   </div>
   <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>By search method</h2><p>Keyword (bm25), meaning (vector), both combined (hybrid), and with re-ranking</p></div></div>
     <div id="evalChart"></div>
-    <div class="table-wrap" style="margin-top:12px"><table id="scorecard" translate="no"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">ACL leaks</th></tr></thead><tbody>
+    <div class="table-wrap" style="margin-top:12px"><table id="scorecard" translate="no"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">answerable declined</th><th class="num">ACL leaks</th></tr></thead><tbody>
       ${configs.map((k) => `<tr class="clickable ${k === S.evalConfig ? "selected" : ""}" data-config="${esc(k)}" tabindex="0"><td><code>${esc(k)}</code></td>${METRICS.map(([m]) => {
-        const v = rep.results[k][m], min = th[k] && th[k][m];
-        return `<td class="num" translate="no">${v.toFixed(3)}${min !== undefined ? ` <span class="pill ${v >= min ? "ok" : "bad"}" title="threshold ${min}">${v >= min ? "≥" : "<"} ${min}</span>` : ""}</td>`;
-      }).join("")}<td class="num" translate="no">${rep.results[k].acl_leaks}</td></tr>`).join("")}
+        const v = rep.results[k][m];
+        return `<td class="num" translate="no">${v.toFixed(3)}${pill(v, th[k] && th[k][m])}</td>`;
+      }).join("")}<td class="num" translate="no">${(rep.results[k].false_declines ?? 0).toFixed(3)}</td><td class="num" translate="no">${rep.results[k].acl_leaks}</td></tr>`).join("")}
     </tbody></table></div>
   </div>
-  ${full ? `<div class="card" style="margin-top:16px" id="fullSet"><div class="card-head"><div><h2>Larger held-out set · ${fmt(full.questions)} questions</h2><p>The ${fmt(rep.questions)} gated questions plus ${fmt(full.heldout)} held out: ${fmt(full.answerable)} answerable, ${fmt(full.declines)} to decline (restricted documents asked by people not cleared for them, staff procedures asked at the kiosk, questions nothing answers, off-topic and ambiguous questions). Not gated on quality; any ACL leak fails the release check.</p></div></div>
-    <div class="table-wrap"><table id="fullScorecard" translate="no"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">ACL leaks</th></tr></thead><tbody>
-      ${configs.map((k) => `<tr><td><code>${esc(k)}</code></td>${METRICS.map(([m]) => `<td class="num" translate="no">${full.results[k][m].toFixed(3)}</td>`).join("")}<td class="num" translate="no">${full.results[k].acl_leaks}</td></tr>`).join("")}
+  ${sets.map(([key, id]) => { const f = rep[key], sth = (data.thresholds[key] || {}).configs || {}; return `<div class="card" style="margin-top:16px" id="${id}"><div class="card-head"><div><h2>${setTitle[key]} · ${fmt(f.questions)} questions</h2><p>${setCopy[key](f)} Any ACL leak fails the release check.</p></div></div>
+    <div class="table-wrap"><table id="${id}Scorecard" translate="no"><thead><tr><th>Configuration</th>${METRICS.map(([, l]) => `<th class="num">${esc(l)}</th>`).join("")}<th class="num">answerable declined</th><th class="num">ACL leaks</th></tr></thead><tbody>
+      ${configs.map((k) => `<tr><td><code>${esc(k)}</code></td>${METRICS.map(([m]) => `<td class="num" translate="no">${f.results[k][m].toFixed(3)}${pill(f.results[k][m], sth[k] && sth[k][m])}</td>`).join("")}<td class="num" translate="no">${f.results[k].false_declines.toFixed(3)}</td><td class="num" translate="no">${f.results[k].acl_leaks}</td></tr>`).join("")}
     </tbody></table></div>
-    <p class="muted small" style="margin-top:8px" translate="no">${fmt(full.results[configs[0]].acl_leak_checks)} leak checks per configuration, ${fmt(full.results[configs[0]].restricted_probes)} of them a restricted document's question asked by someone not cleared for it.</p></div>` : ""}
+    <p class="muted small" style="margin-top:8px" translate="no">${fmt(f.results[configs[0]].acl_leak_checks)} leak checks per configuration, ${fmt(f.results[configs[0]].restricted_probes)} of them a restricted document's question asked by someone not cleared for it.</p></div>`; }).join("")}
   <div class="card" style="margin-top:16px"><div class="card-head"><div><h2>Questions not answered perfectly · ${esc(S.evalConfig)}</h2><p>Right document first, cited alone, and the key fact present; or, for a question to decline, "I don't know" with no citation. Click a search method above to switch.</p></div></div>
     ${r.failures.length ? `<div class="table-wrap"><table><thead><tr><th>ID</th><th>Asked by</th><th>Question</th><th>Expected</th><th class="num">Rank</th><th>Cited</th><th>Result</th></tr></thead><tbody>
-      ${r.failures.map((f) => { const q = data.questions[f.id] || {}; const decline = !q.doc; return `<tr><td class="mono small">${esc(f.id)}</td><td class="small">${esc(personaName(S, q.persona || ""))}</td><td>${esc(q.question)}</td><td class="small">${decline ? "decline" : esc(q.doc)}</td><td class="num" translate="no">${f.rank || "–"}</td><td class="small">${esc(f.cited.join(", ") || "none")}</td><td>${decline ? '<span class="pill bad">answered</span>' : f.contains ? '<span class="pill ok">fact present</span>' : '<span class="pill bad">fact missing</span>'}</td></tr>`; }).join("")}
+      ${r.failures.map((f) => { const q = data.questions[f.id] || {}; const decline = !q.doc; return `<tr><td class="mono small">${esc(f.id)}</td><td class="small">${esc(personaName(S, q.persona || ""))}</td><td>${esc(q.question)}</td><td class="small">${decline ? "decline" : esc(q.doc)}</td><td class="num" translate="no">${f.rank || "–"}</td><td class="small">${esc(f.cited.join(", ") || "none")}</td><td>${decline ? '<span class="pill bad">answered</span>' : f.declined ? '<span class="pill bad">declined</span>' : f.contains ? '<span class="pill ok">fact present</span>' : '<span class="pill bad">fact missing</span>'}</td></tr>`; }).join("")}
     </tbody></table></div>` : empty("No misses.")}
   </div>
   <div id="browserRun"></div>`;
