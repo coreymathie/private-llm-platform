@@ -4,9 +4,11 @@
 
 This release reframes the console around the institution that would deploy the platform. The console is set in
 a fictional credit union and opens on an employee assistant, in the pattern of an internal Copilot-style tool,
-with a 59-document library behind it. Evidence: 253 tests, an answer-quality eval over the sample library itself
-(59 questions asked as five personas, no ACL leaks, hybrid citation accuracy 0.920), and a 46-check browser
-smoke test across both console modes.
+with a 59-document library behind it. Evidence: 257 tests, an answer-quality eval over the sample library
+itself on a 296-question development set and a 183-question held-out set written before the last answerer
+change (asked as five personas, no ACL leaks in 2,395 checks per configuration; hybrid citation accuracy 0.843
+and 0.718, decline accuracy 0.590 and 0.593, answerable questions wrongly declined 0.055 and 0.081), a 47-check
+browser smoke test across both console modes, and a Docker image build in CI.
 
 ### Highlights
 - **Harbor Assistant is the landing screen.** Staff ask questions across every collection they may read; the
@@ -27,8 +29,8 @@ smoke test across both console modes.
   per collection before any passage is scored; passages are then ranked together. In live mode the console asks
   each readable collection in parallel and keeps the strongest answer.
 - A refusal path for unanswerable questions: a question nothing answers well receives "I couldn't find that in
-  the documents you can access" instead of an unrelated quote (vector-similarity floor; console only, not
-  applied to the eval).
+  the documents you can access" instead of an unrelated quote (a vector-similarity floor, then the demo
+  answerer's coverage check; the eval goes through the same path).
 - A warning on the answer when a document retrieved for the question contains instruction-like text, cited or
   not.
 - **Business and technical views** (header switch or `?view=technical`). The business view uses plain language
@@ -130,6 +132,50 @@ smoke test across both console modes.
   is reported. Published results changed to the new measurement (hybrid: recall@1 0.880, MRR 0.940, citation
   accuracy 0.920, decline accuracy 0.222; 0 leaks in every configuration), and `evals/thresholds.json` is set one
   point below each measured value.
+- **A larger held-out eval set.** `evals/golden/questions_heldout.jsonl` adds 237 questions written after the
+  gated set's results and never used for tuning: at least three paraphrases for every one of the 59 documents,
+  each restricted document asked by every persona not cleared for it (21 restricted probes), kiosk questions about
+  staff procedures, questions nothing answers, off-topic and ambiguous questions. `scripts/rag_eval.py` reports
+  the gated set and the full set of 296, the number of leak checks (1,480 per configuration on the full set, 144
+  of them restricted probes) and declines by category. The gated numbers and `evals/thresholds.json` are
+  unchanged; the held-out set has no quality thresholds, and the leak gate covers it. On the full set hybrid
+  retrieval measures recall@1 0.838, recall@4 0.983, MRR 0.903, citation accuracy 0.698, answer-contains 0.808
+  and decline accuracy 0.246, with 0 leaks; the misses stay in the set and are described in `evals/README.md`.
+  The console's Answer quality screen shows the full set; its in-browser re-run covers the gated set. These
+  questions were then read one by one to design the answerer change below, so the file is now
+  `evals/golden/questions_dev.jsonl` and, with the gated set, the **development set**.
+- **A second held-out set, written before the answerer change.** `scripts/heldout_questions.py` (seed 20261104,
+  `--check` in CI) writes `evals/heldout/questions.jsonl`: 183 newly written questions (124 answerable, every
+  document at least once, mostly about facts the development set does not ask about; 59 to decline, including
+  every restricted document asked by every persona not cleared for it), with seeded conversational framings.
+  Its results on the unchanged code were recorded first (hybrid: citation accuracy 0.524, answer-contains 0.621,
+  decline accuracy 0.254, 0 leaks). `scripts/rag_eval.py` now reports the gated, development and held-out sets
+  and a false-decline rate (answerable questions answered "I don't know"); `evals/thresholds.json` gates all
+  three, each minimum one point below the value measured after the change, with the gated set's earlier
+  minimums kept where they were higher.
+- **The demo answerer declines when no retrieved document covers the question, and cites one document.** A
+  document must contain at least two of the question's content words (a one-word question must name one
+  document); otherwise the answer is "I don't know". Only the best-covering document is quoted and cited, so a
+  second retrieved document is no longer added. Both rules read only the passages in the prompt, already
+  filtered by the asker's access. Hybrid, development set: citation accuracy 0.698 to 0.843, decline accuracy
+  0.246 to 0.590, answer-contains 0.808 to 0.791, false declines 0.009 to 0.055. Held-out set: citation accuracy
+  0.524 to 0.718, decline accuracy 0.254 to 0.593, answer-contains 0.621 to 0.613, false declines 0.040 to
+  0.081. Gated set: citation accuracy 0.920 to 0.960, answer-contains 0.840 to 0.880, decline accuracy 0.222 to
+  0.333.
+- **A stricter decline rule was tried and dropped.** Also requiring more than a third of the question's content
+  words, chosen on the development set, wrongly declined 0.290 of held-out answerable questions (decline
+  accuracy 0.695). The proportion test was removed so held-out wrong declines stay at or under 10% (hybrid
+  0.081). The held-out set informed that choice and is no longer an untouched test of the rule; the decline
+  minimums in `evals/thresholds.json` were lowered once to match, as recorded there.
+- **The Docker image is built in CI.** A `docker` job builds the Dockerfile (no push) and imports the gateway
+  app inside the image, so a base-image bump that breaks the build fails the check.
+- **How the sample numbers were set.** Usage and impact gains a panel listing every headline figure (staffing
+  ratios, employees using it, questions per employee, hours saved, loaded hourly cost, infrastructure cost,
+  answered from documents, helpful ratings, response time, restricted content withheld) with its sample value,
+  the assumption behind it and its published source. The table lives in `scripts/generate_sample_company.py`
+  (`headline_figures`, written to `demo/data/sample_company.json`) and docs/console.md quotes it; a test fails if a
+  cited figure lacks a URL. No published source has been checked yet, so every figure is labelled an assumption
+  and the generated numbers are unchanged.
 
 ### Fixed
 - The assistant showed "Good morning, priya" and the generic staff questions while Pyodide loaded, before the

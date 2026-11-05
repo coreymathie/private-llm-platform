@@ -6,26 +6,28 @@ covers, how upstream services are simulated, and how the documentation itself is
 
 ## Scope
 
-- **253 automated tests** (186 through v0.6, 32 added in v0.7, 35 since; parametrized cases counted
+- **257 automated tests** (186 through v0.6, 32 added in v0.7, 39 since; parametrized cases counted
   individually), all passing, run in CI with `ruff check`, `ruff format --check`, `shellcheck` and (CI only)
-  `helm lint`.
+  `helm lint` and a Docker image build.
 - Upstream HTTP is mocked for both backends: Ollama's native API and the OpenAI wire format (chat, SSE
   streaming with usage, embeddings, models, errors before the first token).
 - **Answer-quality evals gate CI.** `scripts/rag_eval.py --check` runs the real ingestion, access-control and
-  retrieval code over the sample library (59 documents, 3 restricted) with 59 golden questions asked as five
-  personas (9 of them to decline) and fails on a drop below `evals/thresholds.json` or any ACL leak. Results and their limits are in
-  [benchmarks.md](benchmarks.md#retrieval-quality-measured-golden-set).
+  retrieval code over the sample library (59 documents, 3 restricted) with three question sets asked as five
+  personas: the 59-question gated set, the 296-question development set and the 183-question held-out set
+  (written by `scripts/heldout_questions.py` before the last answerer change). It fails on a drop below
+  `evals/thresholds.json` on any set, or on any ACL leak (2,395 leak checks per configuration). Results and
+  their limits are in [benchmarks.md](benchmarks.md#retrieval-quality-measured-golden-set).
 - **Documentation is tested.** Every `tests/…::test_name` and `gateway/…::symbol` referenced in `docs/` and the
   README must exist (`tests/test_docs.py`), and every metric the Grafana dashboard queries must be exported
   (`tests/test_metrics.py`).
 - **The console is tested.** Its browser engine runs under CPython in the suite
   (`tests/test_demo_engine.py`, `tests/test_console_engine.py`), and `scripts/demo_smoke.py` drives the real
   console headlessly with Playwright in both modes: every screen and its key interaction in demo mode, then the
-  gateway and the simulated backend under uvicorn in live mode (46 checks, no console errors, no horizontal
+  gateway and the simulated backend under uvicorn in live mode (47 checks, no console errors, no horizontal
   scroll at 390 px). The demo pass starts by checking the start-up screen at 0.5 s and 3 s (progress steps and
   download note visible, no raw persona id, no suggested questions, composer disabled) and, once ready, that the
   persona's own questions appear; with `--pyodide-dir` it also measures the Pyodide download quoted in the
-  start-up note (45 checks without it). It ends by loading Usage and impact under a `fr-FR` browser locale and
+  start-up note (46 checks without it). It ends by loading Usage and impact under a `fr-FR` browser locale and
   checking that money still reads "$…" and that every figure element carries `translate="no"`.
 
 ## Coverage by test file
@@ -35,7 +37,7 @@ covers, how upstream services are simulated, and how the documentation itself is
 | `test_helm_chart.py`, `test_airgap_bundle.py` | Values validated against `values.schema.json` (unsafe values rejected); templates rendered by a Go `text/template` harness (not helm) and checked (hardening, probes, GPU, NetworkPolicy, offline vLLM, keyring, OIDC read back through `Settings`, failing renders); air-gap dry run, real bundle, checksum verify and tamper detection, shellcheck |
 | `test_supply_chain.py` | Lock-file validation; enforce/warn across chat, embeddings, ingestion and questions; digest swap caught by admin re-verify, by the interval, and re-checked after pulls; startup verification audited and bounded; weight-file hashing for OpenAI-compatible servers; ML-BOM validated against the CycloneDX 1.6 schema; trust-on-first-use pinning |
 | `test_encryption.py`, `test_backup_restore.py` | Sealed passages and vectors on disk, row binding, wrong key, hidden documents' keys never unwrapped, encrypting existing data, rotation and retirement, sealed audit fields with key-free verification, startup validation; full backup/restore drill and refusal cases |
-| `test_retrieval.py` | BM25, RRF, rank modes, lexical and cross-encoder rerankers, per-mode `/ask` (BM25 doesn't embed the question), the eval gate meets thresholds with no ACL leaks, and published eval numbers match a fresh run |
+| `test_retrieval.py` | BM25, RRF, rank modes, lexical and cross-encoder rerankers, per-mode `/ask` (BM25 doesn't embed the question), the eval gate meets thresholds on every question set with no ACL leaks, the question sets are well formed (the held-out file matches its generator and repeats no development question), and published eval numbers match a fresh run |
 | `test_acl.py` | Permission-aware retrieval: no cross-group leakage in answers, citations, injection flags, counts, listings or prompts; SQL filtering before scoring; collection ACLs, restricted default, OIDC groups, per-user grants; audited ACL changes; v0.5 database upgrade |
 | `test_identity.py` | OIDC: RS256/ES256, JWKS discovery, caching, rotation and outage; `alg` allow-list (none, HMAC confusion); `iss`/`aud`/`exp`/`nbf`/skew; groups → roles on admin routes and collections; metrics privacy; real HTTP JWKS |
 | `test_gateway.py` | Auth, admin-only routes, OpenAI-shaped responses, usage accounting, rate limit, revocation, last-admin guard, background pulls, redacted audit entries, tamper detection |
@@ -58,7 +60,8 @@ python scripts/demo_smoke.py --live          # optional: headless browser test o
                                              # (needs playwright + chromium; --pyodide-dir for an offline Pyodide)
 ```
 
-CI (`.github/workflows/ci.yml`) also runs `scripts/sample_library.py --check`,
-`scripts/generate_sample_company.py --check`, `shellcheck scripts/*.sh`, `helm lint`, `helm template` for both
-example values files, and an air-gap bundle dry run. A separate job runs the console smoke test in live mode;
+CI (`.github/workflows/ci.yml`) also runs `scripts/heldout_questions.py --check`, `scripts/sample_library.py
+--check`, `scripts/generate_sample_company.py --check`, `shellcheck scripts/*.sh`, `helm lint`, `helm template`
+for both example values files, and an air-gap bundle dry run. A `docker` job builds the Dockerfile (no push)
+and imports the gateway app inside the image. A separate job runs the console smoke test in live mode;
 demo mode loads Pyodide from a CDN and does not fail the build on a CDN outage.

@@ -339,7 +339,7 @@ def test_console_eval_data_matches_a_fresh_run():
     fresh = rag_eval.console_data(rag_eval.evaluate(4))
     assert committed == json.loads(json.dumps(fresh))
     assert committed["problems"] == [] and committed["measured"] is True
-    for f in committed["golden_files"]:
+    for f in committed["golden_files"] + committed["other_files"]:
         assert (ROOT / f).is_file(), f
 
 

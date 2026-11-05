@@ -24,6 +24,7 @@ jobs:
       - run: ruff check gateway tests scripts demo
       - run: ruff format --check gateway tests scripts demo
       - run: pytest -q
+      - run: python scripts/heldout_questions.py --check
       - run: python scripts/rag_eval.py --check
       - run: python scripts/sample_library.py --check
       - run: python scripts/generate_sample_company.py --check
@@ -32,6 +33,15 @@ jobs:
       - run: helm template gw deploy/helm/local-llm-gateway -f deploy/helm/local-llm-gateway/values-vllm-gpu.yaml > /dev/null
       - run: helm template gw deploy/helm/local-llm-gateway -f deploy/helm/local-llm-gateway/values-airgapped.yaml > /dev/null
       - run: bash scripts/airgap_bundle.sh --dry-run --ollama-model llama3.1:8b
+
+  docker:
+    # Builds the gateway image from the Dockerfile (no push) and imports the app inside it, so a base-image or
+    # dependency bump that breaks the build or the install fails here instead of at deploy time.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t local-llm-gateway:ci .
+      - run: docker run --rm local-llm-gateway:ci python -c "import gateway.main as m; print(m.app.title, m.app.version)"
 
   console-smoke:
     # Headless browser checks of the console (scripts/demo_smoke.py). Live mode needs no external network:

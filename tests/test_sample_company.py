@@ -76,3 +76,22 @@ def test_recent_activity_names_documents_that_exist():
     titles = {d["title"] for d in catalog["documents"]}
     bsa = next(n for n in DATA["notable"] if "BSA" in n["detail"])
     assert "Unusual Activity Referral Policy" in bsa["detail"] and "Unusual Activity Referral Policy" in titles
+
+
+def test_every_headline_figure_states_its_basis_and_every_cited_one_has_a_url():
+    """The "How these sample numbers were set" panel: a figure is cited only with a fetched, quoted source."""
+    figures = DATA["benchmarks"]
+    assert {b["id"] for b in figures} >= {"staffing", "adoption", "time_saved", "hourly_cost", "infrastructure"}
+    assert set(gen.SOURCES) <= {b["id"] for b in figures}
+    for b in figures:
+        assert b["figure"] and b["value"] and b["basis"], b["id"]
+        if b["status"] == "cited":
+            src = b["source"]
+            assert src["url"].startswith("https://"), b["id"]
+            assert src["title"] and src["publisher"] and src["year"] and src["quote"], b["id"]
+        else:
+            assert b["status"] == "assumption" and b["source"] is None, b["id"]
+
+
+def test_console_doc_quotes_the_sample_figures_table():
+    assert gen.benchmarks_markdown(DATA) in (ROOT / "docs" / "console.md").read_text()
