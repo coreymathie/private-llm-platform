@@ -121,7 +121,7 @@ browser smoke test across both console modes, and a Docker image build in CI.
 - **Usage figures that add up.** `scripts/generate_sample_company.py` generates questions per department and day
   and splits them into topics only for departments that can read the documents behind each topic. Topic charts
   sum the daily rows for the selected range (the 90-day view previously showed 47,646 topic questions for 42,262
-  asked); 30-day active users (293) exceed the busiest day (226); the BSA/AML investigation topic stays within
+  asked); 30-day active users (181) exceed the busiest day (102); the BSA/AML investigation topic stays within
   Compliance and BSA's own questions; Facilities and security has 8 staff, not 43.
 - **Answer quality measured on the demo's own library.** The generic golden set (12 documents and 43 questions
   for an unrelated company, with facts that contradicted the library) is replaced by 59 paraphrased staff and
@@ -169,13 +169,26 @@ browser smoke test across both console modes, and a Docker image build in CI.
   minimums in `evals/thresholds.json` were lowered once to match, as recorded there.
 - **The Docker image is built in CI.** A `docker` job builds the Dockerfile (no push) and imports the gateway
   app inside the image, so a base-image bump that breaks the build fails the check.
-- **How the sample numbers were set.** Usage and impact gains a panel listing every headline figure (staffing
-  ratios, employees using it, questions per employee, hours saved, loaded hourly cost, infrastructure cost,
-  answered from documents, helpful ratings, response time, restricted content withheld) with its sample value,
-  the assumption behind it and its published source. The table lives in `scripts/generate_sample_company.py`
-  (`headline_figures`, written to `demo/data/sample_company.json`) and docs/console.md quotes it; a test fails if a
-  cited figure lacks a URL. No published source has been checked yet, so every figure is labelled an assumption
-  and the generated numbers are unchanged.
+- **How the sample numbers were set.** Usage and impact gains a panel listing every headline figure (members
+  and assets, staffing ratios, employees using it, questions per employee, hours saved, loaded hourly cost,
+  infrastructure cost, answered from documents, helpful ratings, response time, restricted content withheld) with
+  its sample value, the assumption behind it and its published sources. The table lives in
+  `scripts/generate_sample_company.py` (`SOURCES` and `headline_figures`, written to
+  `demo/data/sample_company.json`) and docs/console.md quotes it; a test fails if a cited figure lacks a URL, and
+  the same test checks that the generator's parameters are the quoted figures.
+- **Sample numbers calibrated to published sources.** Five figures cite a source read in full on 2026-11-05, with
+  the quoted sentence and access date: members and assets (NCUA Quarterly Credit Union Data Summary 2026 Q2),
+  employees using it (Gallup, AI Benefits at Work Unevenly Distributed; FRED Blog, Does generative AI save time
+  at work?), hours saved (St. Louis Fed Open Vault, Generative AI, Productivity and the Future of Work; FRED
+  Blog), loaded hourly cost (BLS Employer Costs for Employee Compensation, June 2026, credit intermediation) and
+  infrastructure cost (CoreWeave on-demand L40S price). Values outside the cited figures were changed:
+  employees using it in 30 days from 293 of 340 (86%) to 181 (53%), and on an average workday from 217 to 99;
+  questions in 30 days from 14,430 to 6,528 (3.0 to 2.9 per active employee per workday); hours saved from 1,337
+  to 605 (1.1 to 0.8 hours per active employee per week, 2.7% to 2.0% of a 40-hour week; 1.0% of all staff
+  hours); loaded hourly cost from $52 to $65.97; infrastructure from $4,200 to $3,285 a month, and from $0.31 to
+  $0.54 per answer. Answered from documents (92.6% to 92.7%), helpful ratings (91.5% of 2,757 to 91.7% of
+  1,239) and restricted content withheld (2.2% to 2.1%) follow from the regenerated rows. Staffing ratios,
+  questions per employee, answer rate, helpful share, response time and restricted share remain assumptions.
 
 ### Fixed
 - The assistant showed "Good morning, priya" and the generic staff questions while Pyodide loaded, before the
