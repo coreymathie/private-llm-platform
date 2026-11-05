@@ -274,7 +274,9 @@ def demo(run: Run, p, port: int, pyodide_dir: Path | None) -> None:
         row = page.locator(f'#sampleSources tr[data-figure="{b["id"]}"]')
         expect(row).to_have_attribute("data-status", b["status"])
         if b["status"] == "cited":
-            expect(row.locator("a")).to_have_attribute("href", b["source"]["url"])
+            expect(row.locator("a")).to_have_count(len(b["sources"]))
+            for src in b["sources"]:
+                expect(row.locator(f'a[href="{src["url"]}"]')).to_have_count(1)
         else:
             expect(row).to_contain_text("Assumption")
     cited = sum(b["status"] == "cited" for b in figures)
