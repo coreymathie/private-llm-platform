@@ -66,28 +66,34 @@ of an internal Copilot-style assistant; administration and governance sit behind
 
 ## How the sample numbers were set
 
-The Usage and impact figures are generated **sample** data. Each headline figure, the assumption behind it and its
-published source (once one is checked) live in one table in
-[`scripts/generate_sample_company.py`](../scripts/generate_sample_company.py) (`headline_figures`, written to
-`demo/data/sample_company.json`); the console's *How these sample numbers were set* panel and the table below
-render from it, and a test keeps them identical. A figure is marked cited only with a source that was fetched
-and read, with its title, publisher, year, URL and the quoted sentence; a test fails if a cited figure has no URL.
-No figure is cited yet: the published benchmarks named in the second column (NCUA call-report staffing ratios,
-surveys of generative AI use and time savings, the BLS Employer Costs for Employee Compensation, GPU list prices,
-help-desk resolution rates) have not been checked against these values, so each figure is an assumption.
+The Usage and impact figures are generated **sample** data, calibrated to published sources where one was found.
+Each headline figure, the assumption behind it and its published sources live in one table in
+[`scripts/generate_sample_company.py`](../scripts/generate_sample_company.py) (`SOURCES` and `headline_figures`,
+written to `demo/data/sample_company.json`); the console's *How these sample numbers were set* panel and the table
+below render from it, and a test keeps them identical. A figure is marked cited only with a source that was fetched
+and read in full, with its title, publisher, year, URL, access date and the quoted sentence (a table row is quoted as
+its label and values); a test fails if a cited figure has no URL, and the same test checks that the generator's
+parameters are the quoted figures. 5 of 11 figures are cited. Where a sample value was outside a cited
+figure, the generator was changed so it lands inside: 30-day adoption fell from 86% to 53% of staff (and the average
+workday from 217 to 99 employees) to sit near published rates of AI use at work, which lowers questions in 30 days
+from 14,430 to 6,528 and hours saved from 1,337 to 605 (now 1.0% of all staff hours, under the published 2.2%); the
+hourly cost moved from an assumed $52 to the BLS figure of $65.97; and the monthly infrastructure cost moved from an
+assumed $4,200 to $3,285, two L40S GPUs at a public on-demand rate, so cost per answer rose from $0.31 to $0.54. The
+other figures remain assumptions, labelled as such.
 
 | Figure | Sample value (last 30 days) | How it was set | Source |
 |---|---|---|---|
-| Staffing ratios | 340 employees for 92,400 members and $1.4B in assets: 272 members and $4.1M in assets per employee | Set for a mid-size credit union; to be checked against NCUA call-report ratios (members and assets per full-time-equivalent employee). | Assumption (no public benchmark cited) |
-| Employees using it | 293 of 340 employees (86%) asked at least one question in 30 days; 217 on an average workday | Department adoption shares in STAFFING for a sanctioned internal assistant open to every employee; to be checked against published rates of generative AI use among employees. | Assumption (no public benchmark cited) |
-| Questions per active employee | 3.0 per workday (14,430 in 30 days) | Per-department questions per active user per workday (1.2 to 4.5 in STAFFING). | Assumption (no public benchmark cited) |
-| Hours saved | 6 minutes per cited answer: 1,337 hours in 30 days, 1.1 hours per active employee per week (2.7% of a 40-hour week) | Minutes saved versus searching shared drives or asking a colleague; to be checked against published figures for time spent searching for information and self-reported time savings from generative AI. | Assumption (no public benchmark cited) |
-| Loaded hourly cost | $52 per hour | Wages plus benefits per hour worked; to be checked against the BLS Employer Costs for Employee Compensation for financial activities. | Assumption (no public benchmark cited) |
-| Infrastructure cost | $4,200 per month: $0.31 per answer | One on-prem server with 2 x NVIDIA L40S, with power and support; to be checked against hardware and cloud GPU list prices. | Assumption (no public benchmark cited) |
-| Answered from documents | 92.6% of questions answered with citations | The share that finds nothing to cite falls from about 11% to about 7% over 90 days as the library fills its gaps; to be checked against published help-desk and policy-question resolution rates. | Assumption (no public benchmark cited) |
-| Answers rated helpful | 91.5% of 2,757 ratings; 21% of answers rated | Rating rate and helpful share chosen for illustration. | Assumption (no public benchmark cited) |
+| Members and assets | 92,400 members and $1.4B in assets: $15,152 in assets per member | Set for a mid-size credit union. Federally insured credit unions hold about $17,100 in assets per member ($2.50 trillion for 146.1 million members, NCUA, June 30, 2026); the sample is 11% below that average. | [Quarterly Credit Union Data Summary 2026 Q2](https://ncua.gov/files/publications/analysis/quarterly-data-summary-2026-Q2.pdf), National Credit Union Administration, 2026 (accessed 2026-11-05): "As of June 30, 2026, there were 4,214 federally insured credit unions with 146.1 million members. ... Total assets in federally insured credit unions rose by $120 billion, or 5.0 percent, over the year ending in 2026Q2, to $2.50 trillion." |
+| Staffing ratios | 340 employees: 272 members and $4.1M in assets per employee | Set for a mid-size credit union. NCUA's quarterly summary reports members and assets but not employees, and no published members-per-employee figure has been checked. | Assumption (no public benchmark cited) |
+| Employees using it | 181 of 340 employees (53%) asked at least one question in 30 days; 99 (29%) on an average workday | Department shares in STAFFING (25% to 75% of staff in 30 days) and a workday share that rises after launch, set close to published rates of AI use at work: roughly half of financial-activities employees use AI daily or weekly (Gallup, January to March 2026), and 39.2% of employed adults used generative AI for work in the past week (Real-Time Population Survey, Q2 2026). | [AI Benefits at Work Unevenly Distributed](https://news.gallup.com/poll/714602/benefits-work-unevenly-distributed.aspx), Gallup, 2026 (accessed 2026-11-05): "Roughly half of employees in the professional and business services, financial activities and information/media industries regularly use AI."<br>[Does generative AI save time at work?](https://fred.stlouisfed.org/blog/2026/08/does-generative-ai-save-time-at-work), Federal Reserve Bank of St. Louis, FRED Blog, 2026 (accessed 2026-11-05): "The share of employed adults who used generative AI for work in the past week grew from 28.2% in Q3 2024 to 39.2% by Q2 2026, indicating adoption is broadening." |
+| Questions per active employee | 2.9 per workday (6,528 in 30 days) | Per-department questions per active user per workday (1.2 to 4.5 in STAFFING). | Assumption (no public benchmark cited) |
+| Hours saved | 6 minutes per cited answer: 605 hours in 30 days, 0.8 hours per active employee per week (2.0% of a 40-hour week), 1.0% of all staff hours | Minutes saved per answer (versus searching shared drives or asking a colleague) are an assumption. The result, 2.0% of an active employee's week and 1.0% of all staff hours, stays below published self-reported savings from generative AI: 5.4% of users' work hours, and 2.2% of employed adults' work hours (Q2 2026). | [Generative AI, Productivity and the Future of Work](https://www.stlouisfed.org/open-vault/2025/oct/generative-ai-productivity-future-work), Federal Reserve Bank of St. Louis, Open Vault, 2025 (accessed 2026-11-05): "On average, generative AI users reported saving time amounting to 5.4% of their work hours, or roughly 2.2 hours per week in a 40-hour work week."<br>[Does generative AI save time at work?](https://fred.stlouisfed.org/blog/2026/08/does-generative-ai-save-time-at-work), Federal Reserve Bank of St. Louis, FRED Blog, 2026 (accessed 2026-11-05): "Perhaps most importantly, the share of work hours saved thanks to AI assistance grew from 1.6% to 2.2%." |
+| Loaded hourly cost | $65.97 per hour | Wages plus benefits per hour: the BLS total compensation cost for private-industry credit intermediation (June 2026), used as published. | [Employer Costs for Employee Compensation, Table 4. Private industry workers by occupational and industry group (June 2026)](https://www.bls.gov/news.release/ecec.t04.htm), U.S. Bureau of Labor Statistics, 2026 (accessed 2026-11-05): "Credit intermediation and related activities industry: Total compensation, Cost ($) 65.97; Wages and salaries 42.35; Total benefits 23.62" |
+| Infrastructure cost | $3,285 per month: $0.54 per answer | Two NVIDIA L40S GPUs at the public on-demand rate for an 8-GPU L40S instance ($18.00 an hour, so $4.50 for two) for 730 hours a month. The on-prem server, with power and support, is assumed to cost no more than renting the same GPUs. | [CoreWeave Cloud Pricing](https://www.coreweave.com/pricing), CoreWeave, 2026 (accessed 2026-11-05): "NVIDIA L40S (GPU Count 8, North America): On-Demand Price: $18.00 / Hour" |
+| Answered from documents | 92.7% of questions answered with citations | The share that finds nothing to cite falls from about 11% to about 7% over 90 days as the library fills its gaps; no comparable published rate for an internal policy assistant has been checked. | Assumption (no public benchmark cited) |
+| Answers rated helpful | 91.7% of 1,239 ratings; 20% of answers rated | Rating rate and helpful share chosen for illustration. | Assumption (no public benchmark cited) |
 | Response time | median 1.6 s, slowest-day 95th percentile 4.5 s | Chosen for illustration; the gateway's own overhead is measured separately (docs/benchmarks.md). | Assumption (no public benchmark cited) |
-| Restricted content withheld | 2.2% of questions | Share of questions that touch a document the asker is not cleared for (1.8% to 3% a day). | Assumption (no public benchmark cited) |
+| Restricted content withheld | 2.1% of questions | Share of questions that touch a document the asker is not cleared for (1.8% to 3% a day). | Assumption (no public benchmark cited) |
 
 ## Business and technical views
 

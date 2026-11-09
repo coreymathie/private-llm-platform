@@ -176,15 +176,16 @@ async function overview(view, S) {
   top.innerHTML = hbars(topicTotals, { ariaLabel: "Questions by topic", width: chartWidth(top, 560), fmtValue: num, color: "var(--series-3)", labelWidth: Math.min(260, Math.round(chartWidth(top, 560) * 0.48)) });
 }
 
-// "How these sample numbers were set": every headline figure, the assumption behind it, and its published source
-// when one has been checked (scripts/generate_sample_company.py, headline_figures; docs/console.md quotes it).
+// "How these sample numbers were set": every headline figure, the assumption behind it, and the published sources it
+// is calibrated to, when checked (scripts/generate_sample_company.py, headline_figures; docs/console.md quotes it).
 function sourcesPanel(rows) {
   if (!rows.length) return "";
-  const cited = rows.filter((b) => b.source).length;
-  const cite = (b) => b.source
-    ? `<a href="${esc(b.source.url)}" rel="noopener" target="_blank">${esc(b.source.title)}</a>, ${esc(b.source.publisher)}, <span translate="no">${esc(b.source.year)}</span>: “${esc(b.source.quote)}”`
+  const cited = rows.filter((b) => (b.sources || []).length).length;
+  const one = (s) => `<a href="${esc(s.url)}" rel="noopener" target="_blank">${esc(s.title)}</a>, ${esc(s.publisher)}, <span translate="no">${esc(s.year)}</span> (accessed <span translate="no">${esc(s.accessed)}</span>): “${esc(s.quote)}”`;
+  const cite = (b) => (b.sources || []).length
+    ? b.sources.map((s) => `<p class="src-cite">${one(s)}</p>`).join("")
     : '<span class="pill sim">Assumption</span> no public benchmark cited';
-  return `<div class="card" style="margin-top:16px" id="sampleSources"><div class="card-head"><div><h2>How these sample numbers were set</h2><p>The figures above are generated sample data, not measurements. ${cited ? `${cited} of ${rows.length} are calibrated to the published source shown; the rest` : "Each"} rests on the stated assumption.</p></div></div>
+  return `<div class="card" style="margin-top:16px" id="sampleSources"><div class="card-head"><div><h2>How these sample numbers were set</h2><p>The figures above are generated sample data, not measurements. ${cited ? `${cited} of ${rows.length} are calibrated to the published sources shown; the others rest` : "Each rests"} on the stated assumption.</p></div></div>
     <div class="table-wrap"><table class="sources"><thead><tr><th>Figure</th><th>Sample value, last 30 days</th><th>How it was set</th><th>Source</th></tr></thead><tbody>
       ${rows.map((b) => `<tr data-figure="${esc(b.id)}" data-status="${esc(b.status)}"><td><b>${esc(b.figure)}</b></td><td class="small" translate="no">${esc(b.value)}</td><td class="small">${esc(b.basis)}</td><td class="small">${cite(b)}</td></tr>`).join("")}
     </tbody></table></div></div>`;

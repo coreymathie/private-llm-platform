@@ -23,13 +23,16 @@ The model, in short:
 - Most questions are answered from documents with citations; some find nothing in the documents the
   asker may read, and a small share touch documents the asker isn't cleared for, which the retrieval
   layer filters out before scoring.
-- Time saved uses a stated minutes-per-answer assumption and a loaded hourly cost; the
-  infrastructure cost is a stated monthly figure for one on-prem GPU server.
+- Adoption (about half of staff in 30 days, under a third on a workday) is set close to published rates of
+  AI use at work. Time saved uses a stated minutes-per-answer assumption and stays below published
+  self-reported savings; the hourly cost is the BLS total compensation for credit intermediation, and the
+  infrastructure cost is two L40S GPUs at a public on-demand rate, a ceiling for one on-prem server.
 
 Every headline figure is listed in the file's "benchmarks" table (computed from the generated rows, last 30
 days) with the assumption behind it and, where one has been checked, the published source it is calibrated to.
-A figure is "cited" only with a source someone fetched and read: title, publisher, year, URL and the quoted
-sentence. The console's "How these sample numbers were set" panel and docs/console.md render from that table.
+A figure is "cited" only with a source someone fetched and read: title, publisher, year, URL, access date and the
+quoted sentence (SOURCES). The console's "How these sample numbers were set" panel and docs/console.md render from
+that table.
 """
 
 from __future__ import annotations
@@ -53,17 +56,17 @@ HOLIDAYS = {date(2026, 9, 7)}  # Labor Day
 # Department: headcount, questions per active user per workday, share of staff active in 30 days,
 # relative rate of questions that find nothing to cite
 STAFFING = {
-    "Member services and branches": (160, 3.0, 0.86, 1.0),
-    "Lending": (48, 3.5, 0.90, 0.9),
-    "IT and digital banking": (34, 2.4, 0.85, 1.1),
-    "Payments and fraud operations": (26, 4.0, 0.92, 0.9),
-    "Finance and accounting": (18, 2.2, 0.78, 1.1),
-    "Compliance and BSA": (12, 4.5, 1.0, 0.8),
-    "Marketing": (12, 1.6, 0.67, 1.3),
-    "Human resources": (10, 2.9, 0.9, 1.0),
-    "Facilities and security": (8, 1.2, 0.75, 1.2),
-    "Executive": (8, 1.2, 0.75, 1.2),
-    "Internal audit": (4, 3.0, 1.0, 0.9),
+    "Member services and branches": (160, 3.0, 0.45, 1.0),
+    "Lending": (48, 3.5, 0.60, 0.9),
+    "IT and digital banking": (34, 2.4, 0.70, 1.1),
+    "Payments and fraud operations": (26, 4.0, 0.60, 0.9),
+    "Finance and accounting": (18, 2.2, 0.55, 1.1),
+    "Compliance and BSA": (12, 4.5, 0.75, 0.8),
+    "Marketing": (12, 1.6, 0.50, 1.3),
+    "Human resources": (10, 2.9, 0.60, 1.0),
+    "Facilities and security": (8, 1.2, 0.25, 1.2),
+    "Executive": (8, 1.2, 0.50, 1.2),
+    "Internal audit": (4, 3.0, 0.75, 0.9),
 }
 
 ALL_STAFF = "all"
@@ -136,13 +139,20 @@ COMPANY = {
     "regulators": ["NCUA", "CFPB", "Florida OFR"],
 }
 
+# Two NVIDIA L40S GPUs at CoreWeave's public on-demand rate for an 8 x L40S instance ($18.00 an hour), around the
+# clock (8,760 hours a year / 12 = 730 hours a month): an owned server with power and support is assumed to cost no
+# more than renting the same GPUs. See SOURCES["infrastructure"].
+GPUS, L40S_NODE_PER_HOUR_USD, L40S_NODE_GPUS, HOURS_PER_MONTH = 2, 18.00, 8, 730
+
 ASSUMPTIONS = {
     "minutes_saved_per_answer": 6,
-    "loaded_cost_per_hour_usd": 52,
-    "infrastructure_per_month_usd": 4200,
-    "note": "Minutes saved per cited answer (versus searching shared drives or asking a colleague), "
-    "the loaded hourly cost of an employee, and the monthly cost of the on-prem GPU server, power and "
-    "support. Illustrative assumptions for the sample company, not measurements.",
+    # BLS ECEC, June 2026: total compensation for private-industry credit intermediation (SOURCES["hourly_cost"])
+    "loaded_cost_per_hour_usd": 65.97,
+    "infrastructure_per_month_usd": round(GPUS * L40S_NODE_PER_HOUR_USD / L40S_NODE_GPUS * HOURS_PER_MONTH),
+    "note": "Minutes saved per cited answer (versus searching shared drives or asking a colleague; an assumption), "
+    "the hourly cost of an employee (BLS total compensation per hour for credit intermediation, June 2026), and the "
+    "monthly infrastructure cost (two L40S GPUs at a public cloud on-demand rate, as a ceiling for the on-prem "
+    "server). Sample figures calibrated to published sources, not measurements.",
 }
 
 
@@ -171,9 +181,87 @@ def access_text(collection: dict, documents: list[dict], groups: dict) -> str:
     return text
 
 
-# Published sources the sample is calibrated to, by figure id: {"title", "publisher", "year", "url", "quote",
-# "range"}. Empty until a source has been fetched and read; a figure without one is labelled an assumption.
-SOURCES: dict[str, dict] = {}
+# Published sources the sample is calibrated to, by figure id: a list of {"title", "publisher", "year", "url",
+# "quote", "accessed"}. Each was fetched and read in full on the access date, and "quote" is copied from the page
+# (a table row is quoted as its label and values). A figure without a source is labelled an assumption.
+ACCESSED = "2026-11-05"
+_NCUA = {
+    "title": "Quarterly Credit Union Data Summary 2026 Q2",
+    "publisher": "National Credit Union Administration",
+    "year": 2026,
+    "url": "https://ncua.gov/files/publications/analysis/quarterly-data-summary-2026-Q2.pdf",
+    "quote": "As of June 30, 2026, there were 4,214 federally insured credit unions with 146.1 million members. ... "
+    "Total assets in federally insured credit unions rose by $120 billion, or 5.0 percent, over the year ending in "
+    "2026Q2, to $2.50 trillion.",
+    "accessed": ACCESSED,
+}
+_RPS_2026 = {
+    "title": "Does generative AI save time at work?",
+    "publisher": "Federal Reserve Bank of St. Louis, FRED Blog",
+    "year": 2026,
+    "url": "https://fred.stlouisfed.org/blog/2026/08/does-generative-ai-save-time-at-work",
+    "accessed": ACCESSED,
+}
+SOURCES: dict[str, list[dict]] = {
+    "membership": [_NCUA],
+    "adoption": [
+        {
+            "title": "AI Benefits at Work Unevenly Distributed",
+            "publisher": "Gallup",
+            "year": 2026,
+            "url": "https://news.gallup.com/poll/714602/benefits-work-unevenly-distributed.aspx",
+            "quote": "Roughly half of employees in the professional and business services, financial activities and "
+            "information/media industries regularly use AI.",
+            "accessed": ACCESSED,
+        },
+        {
+            **_RPS_2026,
+            "quote": "The share of employed adults who used generative AI for work in the past week grew from 28.2% "
+            "in Q3 2024 to 39.2% by Q2 2026, indicating adoption is broadening.",
+        },
+    ],
+    "time_saved": [
+        {
+            "title": "Generative AI, Productivity and the Future of Work",
+            "publisher": "Federal Reserve Bank of St. Louis, Open Vault",
+            "year": 2025,
+            "url": "https://www.stlouisfed.org/open-vault/2025/oct/generative-ai-productivity-future-work",
+            "quote": "On average, generative AI users reported saving time amounting to 5.4% of their work hours, or "
+            "roughly 2.2 hours per week in a 40-hour work week.",
+            "accessed": ACCESSED,
+        },
+        {
+            **_RPS_2026,
+            "quote": "Perhaps most importantly, the share of work hours saved thanks to AI assistance grew from 1.6% "
+            "to 2.2%.",
+        },
+    ],
+    "hourly_cost": [
+        {
+            "title": "Employer Costs for Employee Compensation, Table 4. Private industry workers by occupational and "
+            "industry group (June 2026)",
+            "publisher": "U.S. Bureau of Labor Statistics",
+            "year": 2026,
+            "url": "https://www.bls.gov/news.release/ecec.t04.htm",
+            "quote": "Credit intermediation and related activities industry: Total compensation, Cost ($) 65.97; "
+            "Wages and salaries 42.35; Total benefits 23.62",
+            "accessed": ACCESSED,
+        }
+    ],
+    "infrastructure": [
+        {
+            "title": "CoreWeave Cloud Pricing",
+            "publisher": "CoreWeave",
+            "year": 2026,
+            "url": "https://www.coreweave.com/pricing",
+            "quote": "NVIDIA L40S (GPU Count 8, North America): On-Demand Price: $18.00 / Hour",
+            "accessed": ACCESSED,
+        }
+    ],
+}
+
+# Published totals quoted in the basis text (from the sources above)
+NCUA_MEMBERS, NCUA_ASSETS_USD = 146.1e6, 2.50e12
 
 
 def headline_figures(data: dict) -> list[dict]:
@@ -185,23 +273,39 @@ def headline_figures(data: dict) -> list[dict]:
     asked, answered = sum(d["questions"] for d in days), sum(d["answered"] for d in days)
     up, down = sum(d["thumbs_up"] for d in days), sum(d["thumbs_down"] for d in days)
     hours = answered * a["minutes_saved_per_answer"] / 60
-    per_user_week = hours / active30 / (len(days) / 7)
+    weeks = len(days) / 7
+    per_user_week = hours / active30 / weeks
+    per_staff_week = hours / staff / weeks
+    daily = sum(d["active_users"] for d in work) / len(work)
+    infra = a["infrastructure_per_month_usd"]
     rows = [
+        (
+            "membership",
+            "Members and assets",
+            f"{co['members']:,} members and ${co['assets_usd'] / 1e9:.1f}B in assets: "
+            f"${co['assets_usd'] / co['members']:,.0f} in assets per member",
+            f"Set for a mid-size credit union. Federally insured credit unions hold about "
+            f"${round(NCUA_ASSETS_USD / NCUA_MEMBERS, -2):,.0f} in assets per member ($2.50 trillion for 146.1 "
+            f"million members, NCUA, June 30, 2026); the sample is "
+            f"{1 - co['assets_usd'] / co['members'] / (NCUA_ASSETS_USD / NCUA_MEMBERS):.0%} below that average.",
+        ),
         (
             "staffing",
             "Staffing ratios",
-            f"{staff} employees for {co['members']:,} members and ${co['assets_usd'] / 1e9:.1f}B in assets: "
-            f"{co['members'] / staff:.0f} members and ${co['assets_usd'] / staff / 1e6:.1f}M in assets per employee",
-            "Set for a mid-size credit union; to be checked against NCUA call-report ratios (members and assets per "
-            "full-time-equivalent employee).",
+            f"{staff} employees: {co['members'] / staff:.0f} members and ${co['assets_usd'] / staff / 1e6:.1f}M in "
+            "assets per employee",
+            "Set for a mid-size credit union. NCUA's quarterly summary reports members and assets but not employees, "
+            "and no published members-per-employee figure has been checked.",
         ),
         (
             "adoption",
             "Employees using it",
             f"{active30} of {staff} employees ({active30 / staff:.0%}) asked at least one question in 30 days; "
-            f"{sum(d['active_users'] for d in work) / len(work):.0f} on an average workday",
-            "Department adoption shares in STAFFING for a sanctioned internal assistant open to every employee; to be "
-            "checked against published rates of generative AI use among employees.",
+            f"{daily:.0f} ({daily / staff:.0%}) on an average workday",
+            "Department shares in STAFFING (25% to 75% of staff in 30 days) and a workday share that rises after "
+            "launch, set close to published rates of AI use at work: roughly half of financial-activities employees "
+            "use AI daily or weekly (Gallup, January to March 2026), and 39.2% of employed adults used generative AI "
+            "for work in the past week (Real-Time Population Survey, Q2 2026).",
         ),
         (
             "questions",
@@ -214,31 +318,35 @@ def headline_figures(data: dict) -> list[dict]:
             "time_saved",
             "Hours saved",
             f"{a['minutes_saved_per_answer']} minutes per cited answer: {hours:,.0f} hours in 30 days, "
-            f"{per_user_week:.1f} hours per active employee per week ({per_user_week / 40:.1%} of a 40-hour week)",
-            "Minutes saved versus searching shared drives or asking a colleague; to be checked against published "
-            "figures for time spent searching for information and self-reported time savings from generative AI.",
+            f"{per_user_week:.1f} hours per active employee per week ({per_user_week / 40:.1%} of a 40-hour week), "
+            f"{per_staff_week / 40:.1%} of all staff hours",
+            "Minutes saved per answer (versus searching shared drives or asking a colleague) are an assumption. The "
+            f"result, {per_user_week / 40:.1%} of an active employee's week and {per_staff_week / 40:.1%} of all staff "
+            "hours, stays below published self-reported savings from generative AI: 5.4% of users' work hours, and "
+            "2.2% of employed adults' work hours (Q2 2026).",
         ),
         (
             "hourly_cost",
             "Loaded hourly cost",
-            f"${a['loaded_cost_per_hour_usd']} per hour",
-            "Wages plus benefits per hour worked; to be checked against the BLS Employer Costs for Employee "
-            "Compensation for financial activities.",
+            f"${a['loaded_cost_per_hour_usd']:.2f} per hour",
+            "Wages plus benefits per hour: the BLS total compensation cost for private-industry credit intermediation "
+            "(June 2026), used as published.",
         ),
         (
             "infrastructure",
             "Infrastructure cost",
-            f"${a['infrastructure_per_month_usd']:,} per month: ${a['infrastructure_per_month_usd'] / answered:.2f} "
-            "per answer",
-            "One on-prem server with 2 x NVIDIA L40S, with power and support; to be checked against hardware and "
-            "cloud GPU list prices.",
+            f"${infra:,} per month: ${infra / answered:.2f} per answer",
+            "Two NVIDIA L40S GPUs at the public on-demand rate for an 8-GPU L40S instance "
+            f"(${L40S_NODE_PER_HOUR_USD:.2f} an hour, so "
+            f"${GPUS * L40S_NODE_PER_HOUR_USD / L40S_NODE_GPUS:.2f} for two) for {HOURS_PER_MONTH} hours a "
+            "month. The on-prem server, with power and support, is assumed to cost no more than renting the same GPUs.",
         ),
         (
             "answer_rate",
             "Answered from documents",
             f"{answered / asked:.1%} of questions answered with citations",
             "The share that finds nothing to cite falls from about 11% to about 7% over 90 days as the library fills "
-            "its gaps; to be checked against published help-desk and policy-question resolution rates.",
+            "its gaps; no comparable published rate for an internal policy assistant has been checked.",
         ),
         (
             "helpful",
@@ -262,15 +370,15 @@ def headline_figures(data: dict) -> list[dict]:
     ]
     out = []
     for fid, figure, value, basis in rows:
-        src = SOURCES.get(fid)
+        sources = SOURCES.get(fid, [])
         out.append(
             {
                 "id": fid,
                 "figure": figure,
                 "value": value,
                 "basis": basis,
-                "status": "cited" if src else "assumption",
-                "source": src,
+                "status": "cited" if sources else "assumption",
+                "sources": sources,
             }
         )
     return out
@@ -280,11 +388,12 @@ def benchmarks_markdown(data: dict) -> str:
     """The table docs/console.md quotes (a test keeps the two identical)."""
     lines = ["| Figure | Sample value (last 30 days) | How it was set | Source |", "|---|---|---|---|"]
     for b in data["benchmarks"]:
-        src = b["source"]
         cite = (
-            f'[{src["title"]}]({src["url"]}), {src["publisher"]}, {src["year"]}: "{src["quote"]}"'
-            if src
-            else "Assumption (no public benchmark cited)"
+            "<br>".join(
+                f'[{s["title"]}]({s["url"]}), {s["publisher"]}, {s["year"]} (accessed {s["accessed"]}): "{s["quote"]}"'
+                for s in b["sources"]
+            )
+            or "Assumption (no public benchmark cited)"
         )
         lines.append(f"| {b['figure']} | {b['value']} | {b['basis']} | {cite} |")
     return "\n".join(lines)
@@ -306,7 +415,7 @@ def build() -> dict:
         d = start + timedelta(days=i)
         progress = i / (DAYS - 1)
         workday = d.weekday() < 5 and d not in HOLIDAYS
-        engagement = (0.50 + 0.30 * (1 - math.exp(-2.6 * progress))) if workday else 0.06
+        engagement = (0.40 + 0.20 * (1 - math.exp(-2.6 * progress))) if workday else 0.06
         weekday_factor = [1.12, 1.0, 1.0, 0.98, 0.86, 1, 1][d.weekday()]
         no_answer_rate = 0.11 - 0.04 * progress + rng.uniform(-0.01, 0.01)  # the library fills its gaps
         active = questions = no_answer = 0
