@@ -4,7 +4,7 @@
 # CI builds it and imports the app inside it (the docker job in .github/workflows/ci.yml) but never pushes it;
 # build and push it to your own registry:
 #   docker build -t registry.example.internal/local-llm-gateway:0.7.0 .
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /app
